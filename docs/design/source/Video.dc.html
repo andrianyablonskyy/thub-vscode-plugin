@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Board camera</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07080C}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 1100px; height: 720px; display: flex; flex-direction: column; background: #0A0C12; color: #EAEDF3; font-family: Manrope, system-ui, sans-serif; font-size: 13px; overflow: hidden">
+  <div style="height: 36px; flex-shrink: 0; display: flex; background: #0D0F13; border-bottom: 1px solid #151A26">
+    <div style="padding: 0 16px; display: flex; align-items: center; color: #6B7283">uart.c</div>
+    <div style="padding: 0 16px; display: flex; align-items: center; gap: 8px; background: #0A0C12; border-top: 2px solid #FFAE2B"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFAE2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="14" height="10" rx="2"/><path d="M16 11l6-3v8l-6-3"/></svg>Camera · lab-hw-01</div>
+  </div>
+
+  <div style="height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid #151A26">
+    <div role="radiogroup" aria-label="Playback" style="display: flex; padding: 3px; border-radius: 10px; background: #11141D; border: 1px solid #1E2433">
+      <button role="radio" aria-checked="true" style="height: 30px; padding: 0 12px; border-radius: 8px; border: 0; background: #1E2433; color: #EAEDF3; font-weight: 700">In editor</button>
+      <button role="radio" aria-checked="false" style="height: 30px; padding: 0 12px; border-radius: 8px; border: 0; background: transparent; color: #8C93A4; font-weight: 600">External player</button>
+      <button role="radio" aria-checked="false" style="height: 30px; padding: 0 12px; border-radius: 8px; border: 0; background: transparent; color: #8C93A4; font-weight: 600">Browser</button>
+    </div>
+    <span style="flex: 1"></span>
+    <button style="height: 32px; padding: 0 12px; border-radius: 10px; border: 1px solid #2B3242; background: transparent; color: #EAEDF3; font-weight: 600; display: flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Open in mpv</button>
+    <button style="height: 32px; padding: 0 12px; border-radius: 10px; border: 1px solid #2B3242; background: transparent; color: #EAEDF3; font-weight: 600">Open in browser</button>
+    <button aria-label="Copy stream URL" style="width: 32px; height: 32px; border-radius: 10px; border: 1px solid #2B3242; background: transparent; color: #B6BCC9; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
+    <button aria-label="Snapshot" style="width: 32px; height: 32px; border-radius: 10px; border: 1px solid #2B3242; background: transparent; color: #B6BCC9; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+  </div>
+
+  <div style="flex: 1; display: flex; gap: 20px; padding: 20px; min-height: 0">
+    <div style="flex: 1; position: relative; border-radius: 14px; overflow: hidden; background: #11141D; border: 1px solid #1E2433; display: flex; align-items: center; justify-content: center">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; color: #52596B">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="14" height="10" rx="2"/><path d="M16 11l6-3v8l-6-3"/></svg>
+        <span style="font-size: 13px; font-weight: 600">[Live camera feed of lab-hw-01]</span>
+      </div>
+      <div style="position: absolute; top: 14px; left: 14px; display: flex; gap: 8px">
+        <span style="height: 24px; padding: 0 10px; border-radius: 6px; background: #F2665C; color: #13110A; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; display: flex; align-items: center">LIVE</span>
+        <span style="height: 24px; padding: 0 10px; border-radius: 6px; background: rgba(7,8,12,0.75); color: #EAEDF3; font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; align-items: center">720p · MJPEG via ffmpeg</span>
+      </div>
+      <div style="position: absolute; bottom: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #B6BCC9">
+        <span style="padding: 4px 8px; border-radius: 6px; background: rgba(7,8,12,0.75)">14:23:41</span>
+        <span style="padding: 4px 8px; border-radius: 6px; background: rgba(7,8,12,0.75)">latency ~0.6 s</span>
+      </div>
+    </div>
+
+    <aside style="width: 260px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="padding: 16px; border-radius: 14px; background: #11141D; border: 1px solid #1E2433; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #8C93A4">POWER</span>
+        <span style="color: #B6BCC9; font-size: 12px; line-height: 18px">Watch the board while you switch it. USB ports via uhubctl on the Client.</span>
+        <button style="height: 40px; border-radius: 10px; border: 0; background: #FFAE2B; color: #13110A; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 0 18px rgba(255,174,43,0.28)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/></svg>Power-cycle</button>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+          <button style="height: 34px; border-radius: 10px; border: 1px solid #2B3242; background: transparent; color: #EAEDF3; font-weight: 600">On</button>
+          <button style="height: 34px; border-radius: 10px; border: 1px solid #2B3242; background: transparent; color: #EAEDF3; font-weight: 600">Off</button>
+        </div>
+        <label style="display: flex; justify-content: space-between; align-items: center; color: #8C93A4; font-size: 12px">Port
+          <select style="height: 30px; border-radius: 8px; border: 1px solid #2B3242; background: #0D0F13; color: #EAEDF3; padding: 0 8px; font: inherit"><option>All ports</option><option>Port 2</option></select>
+        </label>
+        <label style="display: flex; justify-content: space-between; align-items: center; color: #8C93A4; font-size: 12px">Off time
+          <select style="height: 30px; border-radius: 8px; border: 1px solid #2B3242; background: #0D0F13; color: #EAEDF3; padding: 0 8px; font: inherit"><option>2 s</option></select>
+        </label>
+      </div>
+      <div style="padding: 16px; border-radius: 14px; background: #11141D; border: 1px solid #1E2433; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #8C93A4">STREAM</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #B6BCC9; word-break: break-all; line-height: 17px">http://127.0.0.1:8090/r-8f2c/video.ts</span>
+        <span style="font-size: 12px; color: #8C93A4">Stops when the reservation ends.</span>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

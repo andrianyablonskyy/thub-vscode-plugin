@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>thub components and states</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07080C}
+button{font:inherit}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 820px; box-sizing: border-box; padding: 48px; background: #07080C; color: #EAEDF3; font-family: Manrope, system-ui, sans-serif; font-size: 13px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px">
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; color: #FFAE2B">BOARD STATES</h2>
+    <div style="border-radius: 16px; background: #11141D; border: 1px solid #151A26; padding: 8px 0; display: flex; flex-direction: column">
+      <div style="height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 18px">
+        <span style="width: 16px; display: flex; justify-content: center"><span style="width: 8px; height: 8px; border-radius: 4px; border: 2px solid #6EA8FE"></span></span>
+        <span style="flex: 1; font-weight: 700">Idle</span><span style="color: #8C93A4; font-size: 12px">click to reserve</span>
+      </div>
+      <div style="height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 18px; background: #1E2433">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFAE2B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span style="flex: 1; font-weight: 700">Reserved by me</span><span style="color: #FFAE2B; font-size: 12px">1h 42m</span>
+      </div>
+      <div style="height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 18px">
+        <span style="width: 16px; display: flex; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFAE2B" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg></span>
+        <span style="flex: 1; font-weight: 700">Connecting</span><span style="color: #8C93A4; font-size: 12px">thub connect starting</span>
+      </div>
+      <div style="height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 18px; color: #B6BCC9">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C93A4" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span style="flex: 1; font-weight: 700">Reserved by someone</span><span style="color: #8C93A4; font-size: 12px">name · time left</span>
+      </div>
+      <div style="height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 18px; color: #B6BCC9">
+        <span style="width: 16px; display: flex; justify-content: center"><span style="width: 8px; height: 8px; border-radius: 4px; background: #6B7283"></span></span>
+        <span style="flex: 1; font-weight: 700">Running a job</span><span style="color: #8C93A4; font-size: 12px">job id</span>
+      </div>
+      <div style="height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 18px; color: #6B7283">
+        <span style="width: 16px; display: flex; justify-content: center"><span style="width: 10px; height: 2px; background: #6B7283"></span></span>
+        <span style="flex: 1; font-weight: 700; text-decoration: line-through">Offline</span><span style="font-size: 12px">not selectable</span>
+      </div>
+    </div>
+    <p style="margin: 0; color: #8C93A4; line-height: 20px">Each state differs in shape and label, not only colour. Amber marks only what is yours.</p>
+
+    <h2 style="margin: 12px 0 0; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; color: #FFAE2B">PALETTE</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px">
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="height: 44px; border-radius: 10px; background: #FFAE2B"></span><span>#FFAE2B</span><span style="color: #8C93A4">action</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="height: 44px; border-radius: 10px; background: #0A0C12; border: 1px solid #2B3242"></span><span>#0A0C12</span><span style="color: #8C93A4">editor</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="height: 44px; border-radius: 10px; background: #11141D; border: 1px solid #2B3242"></span><span>#11141D</span><span style="color: #8C93A4">surface</span></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="height: 44px; border-radius: 10px; background: #6EA8FE"></span><span>#6EA8FE</span><span style="color: #8C93A4">idle</span></div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; color: #FFAE2B">STATUS BAR</h2>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="color: #8C93A4; font-size: 12px">No session</span>
+        <div style="height: 26px; display: flex; align-items: center; background: #11141D; border: 1px solid #151A26; font-size: 12px; color: #B6BCC9"><span style="padding: 0 12px; display: flex; align-items: center; gap: 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4"/></svg>thub: Reserve…</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="color: #8C93A4; font-size: 12px">Reserved and connected</span>
+        <div style="height: 26px; display: flex; align-items: center; background: #11141D; font-size: 12px; color: #B6BCC9"><span style="height: 100%; padding: 0 12px; display: flex; align-items: center; background: #FFAE2B; color: #13110A; font-weight: 800">lab-hw-01 · 1h 42m</span><span style="padding: 0 12px">UART ●</span><span style="padding: 0 12px">GDB ○</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="color: #8C93A4; font-size: 12px">Link dropped, reconnecting</span>
+        <div style="height: 26px; display: flex; align-items: center; background: #11141D; font-size: 12px; color: #B6BCC9"><span style="height: 100%; padding: 0 12px; display: flex; align-items: center; gap: 6px; background: #2A1F0A; color: #FFAE2B; font-weight: 800"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>lab-hw-01 · reconnecting</span><span style="padding: 0 12px">UART held</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="color: #8C93A4; font-size: 12px">Expiring (under 10 minutes)</span>
+        <div style="height: 26px; display: flex; align-items: center; background: #11141D; font-size: 12px; color: #B6BCC9"><span style="height: 100%; padding: 0 12px; display: flex; align-items: center; background: #F2665C; color: #13110A; font-weight: 800">lab-hw-01 · 7m left</span><span style="padding: 0 12px; text-decoration: underline">Extend 1h</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="color: #8C93A4; font-size: 12px">Debugging</span>
+        <div style="height: 26px; display: flex; align-items: center; background: #FFAE2B; color: #13110A; font-size: 12px; font-weight: 700"><span style="padding: 0 12px">Debugging on lab-hw-01</span><span style="padding: 0 12px">GDB ●</span></div>
+      </div>
+    </div>
+
+    <h2 style="margin: 12px 0 0; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; color: #FFAE2B">BUTTONS</h2>
+    <div style="display: flex; gap: 10px; align-items: center">
+      <button style="height: 36px; padding: 0 16px; border-radius: 12px; border: 0; background: #FFAE2B; color: #13110A; font-weight: 800; box-shadow: 0 0 18px rgba(255,174,43,0.28)">Flash</button>
+      <button style="height: 36px; padding: 0 16px; border-radius: 12px; border: 1px solid #2B3242; background: transparent; color: #EAEDF3; font-weight: 700">Debug</button>
+      <button style="height: 36px; padding: 0 16px; border-radius: 12px; border: 1px solid #1E2433; background: transparent; color: #8C93A4; font-weight: 600">Release</button>
+    </div>
+    <p style="margin: 0; color: #8C93A4; line-height: 20px">One amber button per view: the next thing to do.</p>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; color: #FFAE2B">NOTIFICATIONS</h2>
+
+    <div role="status" style="padding: 14px; border-radius: 12px; background: #151A26; border: 1px solid #2B3242; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 11px; background: #2A1F0A; color: #FFAE2B; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700">lab-hw-01 is yours for 10 more minutes</span><span style="color: #8C93A4; font-size: 12px">A running job keeps running when it ends.</span></div></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px"><button style="height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid #2B3242; background: transparent; color: #B6BCC9; font-weight: 600">Release now</button><button style="height: 28px; padding: 0 12px; border-radius: 8px; border: 0; background: #FFAE2B; color: #13110A; font-weight: 800">Extend 1h</button></div>
+    </div>
+
+    <div role="status" style="padding: 14px; border-radius: 12px; background: #151A26; border: 1px solid #2B3242; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 11px; background: #1A2440; color: #6EA8FE; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></span>
+        <div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700">Link to lab-hw-01 came back</span><span style="color: #8C93A4; font-size: 12px">Serial stayed connected. The debug session has to reattach.</span></div></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px"><button style="height: 28px; padding: 0 12px; border-radius: 8px; border: 0; background: #FFAE2B; color: #13110A; font-weight: 800">Reattach debugger</button></div>
+    </div>
+
+    <div role="alert" style="padding: 14px; border-radius: 12px; background: #151A26; border: 1px solid #5C2A28; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 11px; background: #3A1A19; color: #F2665C; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px">!</span>
+        <div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700">Flash failed: target not halted</span><span style="color: #8C93A4; font-size: 12px">OpenOCD on the Client could not halt stm32f4x.</span></div></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px"><button style="height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid #2B3242; background: transparent; color: #B6BCC9; font-weight: 600">Show log</button><button style="height: 28px; padding: 0 12px; border-radius: 8px; border: 0; background: #FFAE2B; color: #13110A; font-weight: 800">Power-cycle and retry</button></div>
+    </div>
+
+    <div role="status" style="padding: 14px; border-radius: 12px; background: #151A26; border: 1px solid #2B3242; display: flex; gap: 10px">
+      <span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 11px; background: #1E2433; color: #B6BCC9; display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700">Reservation ended</span><span style="color: #8C93A4; font-size: 12px">Terminals, camera and forwarded ports were closed.</span></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

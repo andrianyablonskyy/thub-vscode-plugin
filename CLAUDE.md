@@ -5,8 +5,10 @@ reserve and release a board, flash firmware, debug it, use its serial ports,
 watch its camera, switch its USB power and forward ports from its Client —
 all without leaving the editor.
 
-UI design (source of truth for layout, states and copy):
-https://claude.ai/artifact/Dosa1wGfYUMpQDWfLLdbbH — artboards 1–7.
+UI design (source of truth for layout, states and copy): `docs/design/` —
+screenshots in `png/`, viewable pages in `html/`, index in `README.md`.
+Editable original: https://claude.ai/artifact/Dosa1wGfYUMpQDWfLLdbbH
+(artboards 1–7). Check the matching artboard before building any view.
 
 ## Core principle: wrap the `thub` CLI, don't reimplement it
 

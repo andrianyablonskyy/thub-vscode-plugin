@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>thub ports</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07080C}
+a{color:#FFAE2B;text-decoration:none}a:hover{color:#FFD28A}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 1200px; height: 440px; display: flex; flex-direction: column; background: #0A0C12; color: #EAEDF3; font-family: Manrope, system-ui, sans-serif; font-size: 13px; border-top: 1px solid #1E2433; overflow: hidden">
+  <div style="height: 36px; flex-shrink: 0; display: flex; align-items: center; gap: 22px; padding: 0 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #6B7283">
+    <span>PROBLEMS</span><span>OUTPUT</span><span>DEBUG CONSOLE</span><span>TERMINAL</span>
+    <span style="color: #EAEDF3; border-bottom: 1px solid #FFAE2B; padding-bottom: 6px; margin-top: 7px">THUB PORTS</span>
+    <span style="flex: 1"></span>
+    <span style="font-weight: 600; letter-spacing: 0; color: #8C93A4">lab-hw-01 · link up</span>
+  </div>
+
+  <div role="table" aria-label="Forwarded ports" style="flex: 1; display: flex; flex-direction: column; padding: 0 16px; min-height: 0">
+    <div role="row" style="display: grid; grid-template-columns: 180px 260px 220px 140px minmax(0, 1fr); align-items: center; height: 32px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #8C93A4; border-bottom: 1px solid #151A26">
+      <span role="columnheader">NAME</span><span role="columnheader">ON THE BOARD'S CLIENT</span><span role="columnheader">LOCAL ADDRESS</span><span role="columnheader">STATUS</span><span role="columnheader" style="text-align: right">ACTIONS</span>
+    </div>
+
+    <div role="row" style="display: grid; grid-template-columns: 180px 260px 220px 140px minmax(0, 1fr); align-items: center; height: 38px; border-bottom: 1px solid #11141D">
+      <span style="display: flex; align-items: center; gap: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C93A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"/></svg>UART 1</span>
+      <span style="font-family: 'JetBrains Mono', monospace; color: #B6BCC9">/dev/thub/dut1-uart</span>
+      <span style="font-family: 'JetBrains Mono', monospace">127.0.0.1:5001</span>
+      <span style="display: flex; align-items: center; gap: 6px; color: #9ED9B0"><span style="width: 7px; height: 7px; border-radius: 4px; background: #9ED9B0"></span>1 client</span>
+      <span style="display: flex; justify-content: flex-end; gap: 14px"><a href="#">Open terminal</a><a href="#" style="color: #8C93A4">Copy</a></span>
+    </div>
+    <div role="row" style="display: grid; grid-template-columns: 180px 260px 220px 140px minmax(0, 1fr); align-items: center; height: 38px; border-bottom: 1px solid #11141D">
+      <span style="display: flex; align-items: center; gap: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C93A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6M12 19h8"/></svg>UART 2</span>
+      <span style="font-family: 'JetBrains Mono', monospace; color: #B6BCC9">/dev/thub/dut2-uart</span>
+      <span style="font-family: 'JetBrains Mono', monospace">127.0.0.1:5002</span>
+      <span style="display: flex; align-items: center; gap: 6px; color: #8C93A4"><span style="width: 7px; height: 7px; border-radius: 4px; border: 1.5px solid #8C93A4"></span>idle</span>
+      <span style="display: flex; justify-content: flex-end; gap: 14px"><a href="#">Open terminal</a><a href="#" style="color: #8C93A4">Copy</a></span>
+    </div>
+    <div role="row" style="display: grid; grid-template-columns: 180px 260px 220px 140px minmax(0, 1fr); align-items: center; height: 38px; border-bottom: 1px solid #11141D">
+      <span style="display: flex; align-items: center; gap: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C93A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h8v5a4 4 0 0 1-8 0zM12 5v4"/></svg>GDB · ST-Link 1</span>
+      <span style="font-family: 'JetBrains Mono', monospace; color: #B6BCC9">OpenOCD · stm32f4x</span>
+      <span style="font-family: 'JetBrains Mono', monospace">127.0.0.1:3333</span>
+      <span style="display: flex; align-items: center; gap: 6px; color: #8C93A4"><span style="width: 7px; height: 7px; border-radius: 4px; border: 1.5px solid #8C93A4"></span>idle</span>
+      <span style="display: flex; justify-content: flex-end; gap: 14px"><a href="#">Debug</a><a href="#">Flash</a><a href="#" style="color: #8C93A4">Copy</a></span>
+    </div>
+    <div role="row" style="display: grid; grid-template-columns: 180px 260px 220px 140px minmax(0, 1fr); align-items: center; height: 38px; border-bottom: 1px solid #11141D">
+      <span style="display: flex; align-items: center; gap: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C93A4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="14" height="10" rx="2"/><path d="M16 11l6-3v8l-6-3"/></svg>Camera</span>
+      <span style="font-family: 'JetBrains Mono', monospace; color: #B6BCC9">video-stream · MPEG-TS</span>
+      <span style="font-family: 'JetBrains Mono', monospace">127.0.0.1:8090</span>
+      <span style="display: flex; align-items: center; gap: 6px; color: #9ED9B0"><span style="width: 7px; height: 7px; border-radius: 4px; background: #9ED9B0"></span>streaming</span>
+      <span style="display: flex; justify-content: flex-end; gap: 14px"><a href="#">Open</a><a href="#" style="color: #8C93A4">Copy</a></span>
+    </div>
+    <div role="row" style="display: grid; grid-template-columns: 180px 260px 220px 140px minmax(0, 1fr); align-items: center; height: 38px; border-bottom: 1px solid #11141D">
+      <span style="display: flex; align-items: center; gap: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFAE2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>DUT web UI</span>
+      <span style="font-family: 'JetBrains Mono', monospace; color: #B6BCC9">192.168.7.2:80</span>
+      <span style="font-family: 'JetBrains Mono', monospace">127.0.0.1:8081</span>
+      <span style="display: flex; align-items: center; gap: 6px; color: #9ED9B0"><span style="width: 7px; height: 7px; border-radius: 4px; background: #9ED9B0"></span>forwarding</span>
+      <span style="display: flex; justify-content: flex-end; gap: 14px"><a href="#">Open in browser</a><a href="#">Preview</a><a href="#" style="color: #8C93A4">Stop</a></span>
+    </div>
+    <div role="row" style="display: grid; grid-template-columns: 180px 260px 220px 140px minmax(0, 1fr); align-items: center; height: 38px; border-bottom: 1px solid #11141D">
+      <span style="display: flex; align-items: center; gap: 8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFAE2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>MQTT broker</span>
+      <span style="font-family: 'JetBrains Mono', monospace; color: #B6BCC9">localhost:1883</span>
+      <span style="font-family: 'JetBrains Mono', monospace">127.0.0.1:18830</span>
+      <span style="display: flex; align-items: center; gap: 6px; color: #F2665C"><span style="width: 7px; height: 7px; border-radius: 1px; background: #F2665C"></span>refused</span>
+      <span style="display: flex; justify-content: flex-end; gap: 14px"><a href="#">Retry</a><a href="#" style="color: #8C93A4">Remove</a></span>
+    </div>
+
+    <form style="display: flex; align-items: flex-end; gap: 12px; padding: 16px 0">
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #8C93A4">NAME
+        <input placeholder="e.g. Modbus TCP" style="width: 170px; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 1px solid #2B3242; background: #0D0F13; color: #EAEDF3; font: 500 13px Manrope, sans-serif; letter-spacing: 0">
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #8C93A4">HOST:PORT ON THE CLIENT
+        <input placeholder="192.168.7.2:502" style="width: 240px; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 1px solid #2B3242; background: #0D0F13; color: #EAEDF3; font: 500 13px 'JetBrains Mono', monospace; letter-spacing: 0">
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #8C93A4">LOCAL PORT
+        <input placeholder="auto" style="width: 110px; height: 34px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; border: 1px solid #2B3242; background: #0D0F13; color: #EAEDF3; font: 500 13px 'JetBrains Mono', monospace; letter-spacing: 0">
+      </label>
+      <button type="submit" style="height: 34px; padding: 0 16px; border-radius: 10px; border: 0; background: #FFAE2B; color: #13110A; font-weight: 800; box-shadow: 0 0 18px rgba(255,174,43,0.28)">Forward port</button>
+      <span style="flex: 1"></span>
+      <span style="font-size: 12px; color: #8C93A4">Only hosts on the runner's allowlist · ends with the reservation</span>
+    </form>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":440}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

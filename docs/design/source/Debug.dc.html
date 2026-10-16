@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>thub remote debug</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07080C}
+a{color:#FFAE2B}a:hover{color:#FFD28A}
+button{font:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: #0A0C12; color: #EAEDF3; font-family: Manrope, system-ui, sans-serif; font-size: 13px; overflow: hidden; position: relative">
+
+  <div style="height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 10px; background: #07080C; border-bottom: 1px solid #151A26; color: #8C93A4; font-size: 12px">
+    <span>uart-driver — firmware-f401</span>
+    <span style="color: #52596B">·</span>
+    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 6px; background: #11141D; border: 1px solid #1E2433; color: #EAEDF3"><span style="width: 6px; height: 6px; border-radius: 3px; background: #FFAE2B"></span>thub: lab-hw-01</span>
+  </div>
+
+  <div style="flex: 1; display: flex; min-height: 0">
+    <nav aria-label="Activity bar" style="width: 48px; flex-shrink: 0; background: #0D0F13; border-right: 1px solid #151A26; display: flex; flex-direction: column; align-items: center; padding-top: 8px; gap: 4px">
+      <button aria-label="Explorer" style="width: 44px; height: 44px; border: 0; background: transparent; color: #6B7283; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6"/></svg></button>
+      <button aria-label="Run and debug" aria-current="true" style="width: 44px; height: 44px; border: 0; border-left: 2px solid #FFAE2B; background: transparent; color: #EAEDF3; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h8v5a4 4 0 0 1-8 0zM12 5v4M4 12h4M16 12h4M5 18l3-2M19 18l-3-2"/></svg></button>
+      <button aria-label="thub boards" style="width: 44px; height: 44px; border: 0; background: transparent; color: #FFAE2B; display: flex; align-items: center; justify-content: center; position: relative"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/><circle cx="12" cy="12" r="2"/></svg></button>
+    </nav>
+
+    <aside aria-label="Run and debug" style="width: 320px; flex-shrink: 0; background: #11141D; border-right: 1px solid #151A26; display: flex; flex-direction: column; font-size: 12.5px">
+      <div style="height: 36px; display: flex; align-items: center; padding: 0 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #8C93A4">RUN AND DEBUG</div>
+      <div style="display: flex; gap: 6px; padding: 0 12px 12px">
+        <button aria-label="Continue" style="width: 32px; height: 32px; border-radius: 8px; border: 0; background: #1E2433; color: #9ED9B0; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></button>
+        <label style="flex: 1; display: flex; flex-direction: column"><span style="position: absolute; left: -9999px">Configuration</span>
+          <select style="height: 32px; border-radius: 8px; border: 1px solid #2B3242; background: #0D0F13; color: #EAEDF3; padding: 0 8px; font: inherit"><option>thub: Debug on reserved board</option></select>
+        </label>
+      </div>
+
+      <div style="padding: 6px 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em">▾ VARIABLES</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; padding: 0 16px 10px 26px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+        <div><span style="color: #B6BCC9">h</span>: <span style="color: #8C93A4">0x20000a48 &lt;huart2&gt;</span></div>
+        <div><span style="color: #B6BCC9">n</span>: <span style="color: #FFD28A">12</span></div>
+        <div>▸ <span style="color: #B6BCC9">g_rx</span>: <span style="color: #8C93A4">{head=140, tail=128}</span></div>
+      </div>
+
+      <div style="padding: 6px 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em">▾ CALL STACK <span style="color: #8C93A4; font-weight: 600; letter-spacing: 0">· paused on breakpoint</span></div>
+      <div style="display: flex; flex-direction: column; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+        <div style="padding: 4px 16px 4px 26px; background: #1E2433; display: flex; justify-content: space-between"><span>HAL_UARTEx_RxEventCallback</span><span style="color: #8C93A4">uart.c:50</span></div>
+        <div style="padding: 4px 16px 4px 26px; display: flex; justify-content: space-between; color: #8C93A4"><span>UART_DMARxHalfCplt</span><span>hal_uart.c:3211</span></div>
+        <div style="padding: 4px 16px 4px 26px; display: flex; justify-content: space-between; color: #8C93A4"><span>DMA1_Stream5_IRQHandler</span><span>it.c:88</span></div>
+        <div style="padding: 4px 16px 4px 26px; color: #6B7283">&lt;signal handler called&gt;</div>
+      </div>
+
+      <div style="padding: 12px 16px 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em">▾ CORTEX PERIPHERALS</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; padding: 0 16px 10px 26px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B6BCC9">
+        <div>▸ USART2 <span style="color: #8C93A4">@ 0x40004400</span></div>
+        <div>▸ DMA1 <span style="color: #8C93A4">@ 0x40026000</span></div>
+        <div>▸ GPIOA <span style="color: #8C93A4">@ 0x40020000</span></div>
+      </div>
+
+      <div style="padding: 6px 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em">▸ BREAKPOINTS</div>
+      <div style="flex: 1"></div>
+      <div style="margin: 12px; padding: 12px; border-radius: 12px; border: 1px solid #1E2433; background: #0D0F13; display: flex; flex-direction: column; gap: 6px; font-size: 12px">
+        <span style="font-weight: 700">Remote target</span>
+        <span style="color: #8C93A4">lab-hw-01 · ST-Link 1 · OpenOCD target/stm32f4x.cfg on the Client</span>
+        <span style="font-family: 'JetBrains Mono', monospace; color: #B6BCC9">gdb → 127.0.0.1:3333</span>
+      </div>
+    </aside>
+
+    <main style="flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative">
+      <div style="height: 36px; flex-shrink: 0; display: flex; background: #0D0F13; border-bottom: 1px solid #151A26">
+        <div style="padding: 0 16px; display: flex; align-items: center; background: #0A0C12; border-top: 2px solid #FFAE2B">uart.c</div>
+        <div style="padding: 0 16px; display: flex; align-items: center; color: #6B7283">launch.json</div>
+      </div>
+
+      <div style="position: absolute; top: 48px; left: 50%; margin-left: -150px; height: 36px; display: flex; align-items: center; gap: 2px; padding: 0 6px; border-radius: 10px; background: #1E2433; border: 1px solid #2B3242; box-shadow: 0 10px 30px rgba(0,0,0,0.5)">
+        <button aria-label="Continue" style="width: 32px; height: 28px; border: 0; background: transparent; color: #6EA8FE; display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4h3v16H4zM10 4l11 8-11 8z"/></svg></button>
+        <button aria-label="Step over" style="width: 32px; height: 28px; border: 0; background: transparent; color: #6EA8FE; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 15-4M19 3v5h-5"/><circle cx="12" cy="18" r="2"/></svg></button>
+        <button aria-label="Step into" style="width: 32px; height: 28px; border: 0; background: transparent; color: #6EA8FE; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v10M7 8l5 5 5-5"/><circle cx="12" cy="19" r="2"/></svg></button>
+        <button aria-label="Step out" style="width: 32px; height: 28px; border: 0; background: transparent; color: #6EA8FE; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 15V5M7 10l5-5 5 5"/><circle cx="12" cy="19" r="2"/></svg></button>
+        <button aria-label="Reset target" style="width: 32px; height: 28px; border: 0; background: transparent; color: #9ED9B0; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
+        <span style="width: 1px; height: 18px; background: #2B3242; margin: 0 4px"></span>
+        <button aria-label="Power-cycle board" style="width: 32px; height: 28px; border: 0; background: transparent; color: #FFAE2B; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/></svg></button>
+        <button aria-label="Stop" style="width: 32px; height: 28px; border: 0; background: transparent; color: #F2665C; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+      </div>
+
+      <div style="flex: 1; display: flex; padding-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 21px; min-height: 0; overflow: hidden">
+        <div style="width: 56px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; padding-right: 18px; color: #52596B">
+          <span>45</span><span>46</span><span>47</span><span>48</span><span>49</span>
+          <span style="color: #EAEDF3; display: flex; align-items: center; gap: 8px"><span style="width: 10px; height: 10px; border-radius: 5px; background: #F2665C"></span>50</span>
+          <span>51</span><span>52</span><span>53</span>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; white-space: pre; color: #B6BCC9">
+          <span> </span>
+          <span><span style="color: #6EA8FE">void</span> <span style="color: #EAEDF3">HAL_UARTEx_RxEventCallback</span>(UART_HandleTypeDef *h, <span style="color: #6EA8FE">uint16_t</span> n)</span>
+          <span>{</span>
+          <span>    ring_push(&amp;g_rx, g_uart.rx, n);</span>
+          <span> </span>
+          <span style="background: rgba(255,174,43,0.16); border-left: 2px solid #FFAE2B; margin-left: -2px">    <span style="color: #FFAE2B">log_info</span>(<span style="color: #9ED9B0">"rx %u bytes"</span>, n);</span>
+          <span>    uart_rx_start(&amp;g_uart);</span>
+          <span>}</span>
+          <span> </span>
+        </div>
+      </div>
+
+      <div role="status" style="position: absolute; right: 16px; bottom: 268px; width: 380px; padding: 14px; border-radius: 12px; background: #151A26; border: 1px solid #2B3242; box-shadow: 0 16px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <span style="width: 22px; height: 22px; border-radius: 11px; background: #1C3326; color: #9ED9B0; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+          <div style="display: flex; flex-direction: column; gap: 3px">
+            <span style="font-weight: 700">Flashed build/app.elf to lab-hw-01</span>
+            <span style="color: #8C93A4; font-size: 12px">Load, compare-sections and reset over GDB · verified</span>
+          </div>
+        </div>
+        <div style="height: 4px; border-radius: 2px; background: #FFAE2B"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button style="height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid #2B3242; background: transparent; color: #B6BCC9; font-weight: 600">Show log</button>
+          <button style="height: 28px; padding: 0 12px; border-radius: 8px; border: 1px solid #2B3242; background: transparent; color: #EAEDF3; font-weight: 600">Open serial</button>
+        </div>
+      </div>
+
+      <section aria-label="Debug console" style="height: 250px; flex-shrink: 0; border-top: 1px solid #1E2433; display: flex; flex-direction: column">
+        <div style="height: 36px; display: flex; align-items: center; gap: 22px; padding: 0 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #6B7283">
+          <span>PROBLEMS</span><span>OUTPUT</span>
+          <span style="color: #EAEDF3; border-bottom: 1px solid #FFAE2B; padding-bottom: 6px; margin-top: 7px">DEBUG CONSOLE</span>
+          <span>TERMINAL</span><span>THUB PORTS</span>
+        </div>
+        <div style="flex: 1; padding: 6px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 20px; white-space: pre; color: #B6BCC9; overflow: hidden"><span style="color: #8C93A4">thub: board lab-hw-01 reserved, link up · GDB 127.0.0.1:3333</span>
+<span style="color: #8C93A4">Launching GDB: arm-none-eabi-gdb -q --interpreter=mi2</span>
+target extended-remote 127.0.0.1:3333
+Remote debugging using 127.0.0.1:3333
+Reset_Handler () at startup_stm32f401xe.s:61
+monitor reset halt
+target halted due to debug-request, current mode: Thread
+load
+Loading section .isr_vector, size 0x194 lma 0x8000000
+Loading section .text, size 0xb5e4 lma 0x80001a0
+<span style="color: #EAEDF3">Breakpoint 1, HAL_UARTEx_RxEventCallback (h=0x20000a48, n=12) at uart.c:50</span></div>
+      </section>
+    </main>
+  </div>
+
+  <footer style="height: 26px; flex-shrink: 0; display: flex; align-items: center; background: #FFAE2B; color: #13110A; font-size: 12px; font-weight: 700">
+    <span style="padding: 0 12px; display: flex; align-items: center; gap: 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9h8v5a4 4 0 0 1-8 0zM12 5v4"/></svg>Debugging on lab-hw-01</span>
+    <span style="padding: 0 12px">1h 39m left</span>
+    <span style="padding: 0 12px">UART ●</span>
+    <span style="padding: 0 12px">GDB ●</span>
+    <span style="flex: 1"></span>
+    <span style="padding: 0 12px">Cortex-Debug</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
