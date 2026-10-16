@@ -1,0 +1,12 @@
+.vscode/**
+.vscode-test/**
+src/**
+test/**
+out/**
+docs/**
+node_modules/**
+esbuild.mjs
+eslint.config.mjs
+tsconfig*.json
+CLAUDE.md
+**/*.map

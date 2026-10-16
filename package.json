@@ -1,0 +1,320 @@
+{
+  "name": "thub-vscode",
+  "displayName": "thub — remote boards",
+  "description": "Reserve a board in your TestHub lab, flash and debug it over SWD, use its serial ports and watch its camera — without leaving the editor.",
+  "version": "0.1.0",
+  "publisher": "adsystem-pro",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "author": "Andrian Yablonskyy <andrian.yablonskyy@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrianyablonskyy/thub-vscode-plugin.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "embedded",
+    "hil",
+    "stm32",
+    "openocd",
+    "testhub"
+  ],
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "extensionDependencies": [
+    "marus25.cortex-debug"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onDebugResolve:thub",
+    "onDebugInitialConfigurations"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "thub",
+          "title": "thub",
+          "icon": "media/thub.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "thubPanel",
+          "title": "thub Ports",
+          "icon": "media/thub.svg"
+        }
+      ]
+    },
+    "views": {
+      "thub": [
+        {
+          "id": "thub.boards",
+          "name": "thub",
+          "contextualTitle": "thub"
+        }
+      ],
+      "thubPanel": [
+        {
+          "type": "webview",
+          "id": "thub.ports",
+          "name": "Ports"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "thub.boards",
+        "contents": "Sign in to your TestHub Coordinator to see its boards.\n[Sign in to thub](command:thub.signIn)",
+        "when": "!thub.signedIn"
+      }
+    ],
+    "commands": [
+      { "command": "thub.signIn", "title": "Sign in", "category": "thub", "icon": "$(account)" },
+      { "command": "thub.signOut", "title": "Sign out", "category": "thub" },
+      { "command": "thub.refresh", "title": "Refresh boards", "category": "thub", "icon": "$(refresh)" },
+      { "command": "thub.reserve", "title": "Reserve board…", "category": "thub", "icon": "$(lock)" },
+      { "command": "thub.extend", "title": "Extend reservation 1h", "category": "thub", "icon": "$(history)" },
+      { "command": "thub.release", "title": "Release board", "category": "thub", "icon": "$(unlock)" },
+      { "command": "thub.connect", "title": "Connect to reserved board", "category": "thub", "icon": "$(plug)" },
+      { "command": "thub.flash", "title": "Flash", "category": "thub", "icon": "$(arrow-up)" },
+      { "command": "thub.buildAndFlash", "title": "Build and flash", "category": "thub", "icon": "$(rocket)" },
+      { "command": "thub.configureFlashAfterBuild", "title": "Flash after build…", "category": "thub", "icon": "$(gear)" },
+      { "command": "thub.toggleFlashAfterBuild", "title": "Toggle flash after build", "category": "thub" },
+      { "command": "thub.debug", "title": "Debug on reserved board", "category": "thub", "icon": "$(debug-alt)" },
+      { "command": "thub.reattachDebugger", "title": "Reattach debugger", "category": "thub" },
+      { "command": "thub.openSerial", "title": "Open serial terminal", "category": "thub", "icon": "$(terminal)" },
+      { "command": "thub.openVideo", "title": "Open camera", "category": "thub", "icon": "$(device-camera-video)" },
+      { "command": "thub.powerCycle", "title": "Power-cycle board", "category": "thub", "icon": "$(debug-restart)" },
+      { "command": "thub.powerOn", "title": "Power on", "category": "thub" },
+      { "command": "thub.powerOff", "title": "Power off", "category": "thub" },
+      { "command": "thub.forwardPort", "title": "Forward a port…", "category": "thub", "icon": "$(arrow-right)" },
+      { "command": "thub.copyEndpoint", "title": "Copy address", "category": "thub", "icon": "$(copy)" },
+      { "command": "thub.showLog", "title": "Show log", "category": "thub", "icon": "$(output)" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "thub.reserve", "when": "view == thub.boards && thub.signedIn && !thub.hasSession", "group": "navigation@1" },
+        { "command": "thub.refresh", "when": "view == thub.boards", "group": "navigation@2" }
+      ],
+      "view/item/context": [
+        { "command": "thub.reserve", "when": "view == thub.boards && viewItem == board.idle", "group": "inline" },
+        { "command": "thub.connect", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/ && !thub.connected", "group": "inline@1" },
+        { "command": "thub.release", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "inline@9" },
+        { "command": "thub.extend", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "1_session@1" },
+        { "command": "thub.release", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "1_session@2" },
+        { "command": "thub.copyEndpoint", "when": "view == thub.boards && viewItem =~ /^endpoint/", "group": "inline" },
+        { "command": "thub.openSerial", "when": "view == thub.boards && viewItem == endpoint.uart", "group": "inline" },
+        { "command": "thub.debug", "when": "view == thub.boards && viewItem == endpoint.gdb", "group": "inline" },
+        { "command": "thub.flash", "when": "view == thub.boards && viewItem == endpoint.gdb", "group": "inline" },
+        { "command": "thub.openVideo", "when": "view == thub.boards && viewItem == endpoint.video", "group": "inline" }
+      ],
+      "debug/toolbar": [
+        { "command": "thub.powerCycle", "when": "thub.debugging", "group": "navigation@99" }
+      ],
+      "commandPalette": [
+        { "command": "thub.copyEndpoint", "when": "false" },
+        { "command": "thub.reattachDebugger", "when": "thub.connected" }
+      ]
+    },
+    "configuration": {
+      "title": "thub",
+      "properties": {
+        "thub.url": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Your TestHub Coordinator, e.g. `https://thub.example.com`. The access key is kept in VS Code's secret storage, never here: use **thub: Sign in**."
+        },
+        "thub.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "The thub CLI (the Agent). Empty: thub on PATH."
+        },
+        "thub.gdbPath": {
+          "type": "string",
+          "default": "arm-none-eabi-gdb",
+          "description": "The GDB used to flash and debug (arm-none-eabi-gdb, gdb-multiarch…)."
+        },
+        "thub.defaultTarget": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "OpenOCD target script for SWD, e.g. `stm32l4x` (`target/<name>.cfg` — the script, not the chip). Empty: the probe's OpenOCD target set on the runner card."
+        },
+        "thub.defaultDuration": {
+          "type": "string",
+          "default": "2h",
+          "pattern": "^\\d+[mhd]?$",
+          "description": "The reservation length preselected in Reserve board (30m, 2h, …)."
+        },
+        "thub.ports.uart": { "type": "number", "default": 5001, "description": "Local port of UART 1 (UART n: this + n − 1); the next free one if taken." },
+        "thub.ports.gdb": { "type": "number", "default": 3333, "description": "Local GDB port of ST-Link 1; the next free one if taken." },
+        "thub.ports.video": { "type": "number", "default": 8090, "description": "Local port of the camera stream; the next free one if taken." },
+        "thub.video.mode": {
+          "type": "string",
+          "enum": ["editor", "player", "browser"],
+          "enumDescriptions": [
+            "In an editor tab: a local ffmpeg turns the stream into JPEG frames.",
+            "In an external player (thub.video.player).",
+            "In your browser, played with mpegts.js from a local page."
+          ],
+          "default": "editor",
+          "description": "Where the board's camera opens."
+        },
+        "thub.video.player": {
+          "type": "string",
+          "default": "mpv",
+          "description": "The external player for the camera: mpv, ffplay, vlc or a full path."
+        },
+        "thub.video.ffmpegPath": {
+          "type": "string",
+          "default": "ffmpeg",
+          "description": "The local ffmpeg used to show the camera in an editor tab."
+        },
+        "thub.serial.timestamps": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prefix each line in serial terminals with the time it arrived."
+        },
+        "thub.serial.logDirectory": {
+          "type": "string",
+          "default": "",
+          "description": "Write everything each serial terminal receives to a file in this folder (one per terminal). Empty: off."
+        },
+        "thub.debug.svdFile": {
+          "type": "string",
+          "default": "",
+          "description": "The chip's SVD file, for Cortex-Debug's peripheral view. Supports ${workspaceFolder}."
+        },
+        "thub.flashAfterBuild": {
+          "type": "object",
+          "scope": "resource",
+          "markdownDescription": "Flash the board automatically when a build succeeds. Edit with **thub: Flash after build…**.",
+          "default": {
+            "enabled": false,
+            "buildTask": "",
+            "image": "${workspaceFolder}/build/${workspaceFolderBasename}.elf",
+            "skipUnchanged": true,
+            "board": "reserved",
+            "whenNoBoard": "ask",
+            "target": "",
+            "powerCycle": false,
+            "verify": true,
+            "then": "run",
+            "openSerial": false
+          },
+          "properties": {
+            "enabled": { "type": "boolean", "default": false, "description": "Master switch." },
+            "buildTask": { "type": "string", "default": "", "description": "Task label to watch; empty = any task in the build group." },
+            "image": { "type": "string", "default": "${workspaceFolder}/build/${workspaceFolderBasename}.elf", "description": "ELF to flash. Supports ${workspaceFolder}, ${env:X}, ${config:x}, ${command:x}." },
+            "skipUnchanged": { "type": "boolean", "default": true, "description": "Skip if the image is identical to the last one flashed to this board." },
+            "board": { "type": "string", "default": "reserved", "description": "\"reserved\", a Client name, or \"label:<l>\"." },
+            "whenNoBoard": { "type": "string", "enum": ["ask", "reserve", "skip"], "default": "ask", "description": "No matching reservation: ask, reserve a matching idle board (1h), or do nothing." },
+            "target": { "type": "string", "default": "", "description": "OpenOCD target passed to thub connect --target; empty = the runner card's default." },
+            "powerCycle": { "type": "boolean", "default": false, "description": "Power-cycle before flashing (needs power support on the Coordinator)." },
+            "verify": { "type": "boolean", "default": true, "description": "Compare sections after load." },
+            "then": { "type": "string", "enum": ["run", "halt", "debug"], "default": "run", "description": "After load: reset and run, stay halted, or start a thub debug session." },
+            "openSerial": { "type": "boolean", "default": false, "description": "Focus and clear the UART 1 terminal after flashing." }
+          }
+        }
+      }
+    },
+    "colors": [
+      { "id": "thub.accent", "description": "thub: the one primary action per view, and what's yours.", "defaults": { "dark": "#FFAE2B", "light": "#B86E00", "highContrast": "#FFAE2B", "highContrastLight": "#8A5200" } },
+      { "id": "thub.onAccent", "description": "thub: text on the accent colour.", "defaults": { "dark": "#13110A", "light": "#13110A", "highContrast": "#000000", "highContrastLight": "#FFFFFF" } },
+      { "id": "thub.idle", "description": "thub: idle boards.", "defaults": { "dark": "#6EA8FE", "light": "#2F6FD6", "highContrast": "#6EA8FE", "highContrastLight": "#1F4FA0" } },
+      { "id": "thub.error", "description": "thub: failures, a reservation with under 10 minutes left.", "defaults": { "dark": "#F2665C", "light": "#C8372D", "highContrast": "#F2665C", "highContrastLight": "#A32A21" } },
+      { "id": "thub.ok", "description": "thub: link up, verified.", "defaults": { "dark": "#9ED9B0", "light": "#2E8A4E", "highContrast": "#9ED9B0", "highContrastLight": "#1F6B3A" } }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "thub",
+        "required": ["action"],
+        "properties": {
+          "action": { "type": "string", "enum": ["flash"], "description": "flash: load the image onto the reserved board over its GDB port." },
+          "image": { "type": "string", "description": "ELF to flash (default: thub.flashAfterBuild.image)." },
+          "then": { "type": "string", "enum": ["run", "halt"], "description": "After load: reset and run, or stay halted." }
+        }
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "thub",
+        "label": "thub: Debug on reserved board",
+        "configurationAttributes": {
+          "launch": {
+            "required": ["executable"],
+            "properties": {
+              "executable": { "type": "string", "description": "The ELF to debug.", "default": "${workspaceFolder}/build/${workspaceFolderBasename}.elf" },
+              "flash": { "type": "boolean", "description": "Load the ELF onto the board before debugging.", "default": true },
+              "target": { "type": "string", "description": "OpenOCD target script (e.g. stm32l4x); default thub.defaultTarget or the runner card's." },
+              "svdFile": { "type": "string", "description": "The chip's SVD file for the peripheral view." },
+              "runToEntryPoint": { "type": "string", "description": "Stop at this function after reset.", "default": "main" },
+              "probe": { "type": "number", "description": "Which ST-Link (1, 2 …).", "default": 1 }
+            }
+          },
+          "attach": {
+            "required": ["executable"],
+            "properties": {
+              "executable": { "type": "string", "description": "The ELF that's on the board (for symbols)." },
+              "svdFile": { "type": "string", "description": "The chip's SVD file for the peripheral view." },
+              "probe": { "type": "number", "description": "Which ST-Link (1, 2 …).", "default": 1 }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "thub",
+            "request": "launch",
+            "name": "thub: Debug on reserved board",
+            "executable": "${workspaceFolder}/build/${workspaceFolderBasename}.elf",
+            "flash": true,
+            "runToEntryPoint": "main"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "thub: Debug on reserved board",
+            "description": "Flash and debug your reserved board over thub",
+            "body": { "type": "thub", "request": "launch", "name": "thub: Debug on reserved board", "executable": "^\"\\${workspaceFolder}/build/\\${workspaceFolderBasename}.elf\"", "flash": true, "runToEntryPoint": "main" }
+          },
+          {
+            "label": "thub: Attach to reserved board",
+            "description": "Attach to what's running on your reserved board",
+            "body": { "type": "thub", "request": "attach", "name": "thub: Attach to reserved board", "executable": "^\"\\${workspaceFolder}/build/\\${workspaceFolderBasename}.elf\"" }
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p . --noEmit",
+    "lint": "tsc -p . --noEmit && eslint src test",
+    "pretest": "tsc -p tsconfig.test.json",
+    "test": "mocha --ui tdd 'out/test/unit/**/*.test.js'",
+    "test:integration": "npm run build && tsc -p tsconfig.test.json && node out/test/integration/runTests.js",
+    "vscode:prepublish": "node esbuild.mjs --production",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/mocha": "10.0.10",
+    "@types/node": "20.19.43",
+    "@types/vscode": "1.90.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.28.2",
+    "eslint": "9.39.5",
+    "mocha": "11.8.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0"
+  }
+}
