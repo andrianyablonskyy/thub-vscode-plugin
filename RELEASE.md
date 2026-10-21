@@ -1,4 +1,12 @@
-# Changelog
+# Release notes — thub for VS Code (adsystem-pro.thub-vscode)
+
+What changed in each release, newest first. `## Unreleased` collects the changes since the version on the VS Code Marketplace; `bin/publish` turns that heading into the version and date it releases, and publishes this file as the extension's changelog.
+
+## Unreleased
+
+### Changed
+
+- **Release notes:** the Marketplace's changelog is now this file, `RELEASE.md`, with one section per version (it was `CHANGELOG.md`). `bin/publish` releases the extension like the other TestHub packages: it stamps these notes, publishes to the Marketplace with `vsce publish`, and pushes the version's tag.
 
 ## 0.1.0 — 2026-10-16
 

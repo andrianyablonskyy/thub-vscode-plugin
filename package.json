@@ -303,7 +303,7 @@
     "test": "mocha --ui tdd 'out/test/unit/**/*.test.js'",
     "test:integration": "npm run build && tsc -p tsconfig.test.json && node out/test/integration/runTests.js",
     "vscode:prepublish": "node esbuild.mjs --production",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies --changelog-path RELEASE.md"
   },
   "devDependencies": {
     "@types/mocha": "10.0.10",
