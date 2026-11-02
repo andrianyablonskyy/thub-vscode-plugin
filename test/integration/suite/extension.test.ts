@@ -17,6 +17,22 @@ suite('thub extension in VS Code', () => {
     }
   });
 
+  test('session and endpoint tree actions use header placement and icons', () => {
+    const ext = vscode.extensions.getExtension('adsystem-pro.thub-vscode');
+    assert.ok(ext);
+    const contributes = ext.packageJSON.contributes as {
+      commands: Array<{ command: string; icon?: string }>;
+      menus: { 'view/item/context': Array<{ command: string; when: string }> };
+    };
+    const inline = contributes.menus['view/item/context'],
+      commands = new Map(contributes.commands.map((command) => [command.command, command]));
+    assert.ok(inline.some((item) => item.command === 'thub.addForward' && item.when.includes('session')));
+    assert.ok(inline.some((item) => item.command === 'thub.addRtt' && item.when.includes('session.gdb')));
+    for (const id of ['thub.configureRtt', 'thub.removeRtt', 'thub.updateForward', 'thub.removeForward']){
+      assert.ok(commands.get(id)?.icon, `${id} must have an icon for its inline tree action`);
+    }
+  });
+
   test('the thub task type offers "flash reserved board"', async () => {
     const tasks = await vscode.tasks.fetchTasks({ type: 'thub' });
     assert.ok(tasks.some((t) => t.name === 'flash reserved board' && t.definition.action === 'flash'));

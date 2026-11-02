@@ -81,9 +81,6 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
         nodes.push({ kind: 'forward', service });
       }
       nodes.push(
-        ...(s.ready.ports.some((p) => p.kind === 'swd')
-          ? [{ kind: 'action', label: 'Add RTT reader…', icon: 'add', command: { command: 'thub.addRtt', title: 'Add RTT reader' } } as Node]
-          : []),
         { kind: 'action', label: 'Flash', icon: 'arrow-up', command: { command: 'thub.flash', title: 'Flash' }, primary: true },
         { kind: 'action', label: 'Debug', icon: 'debug-alt', command: { command: 'thub.debug', title: 'Debug' } }
       );
@@ -91,7 +88,6 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
     else if (!s){
       nodes.push({ kind: 'action', label: 'Connect (UART, GDB, camera)', icon: 'plug', command: { command: 'thub.connect', title: 'Connect' }, primary: true });
     }
-    nodes.push({ kind: 'action', label: 'Add forwarded service…', icon: 'add', command: { command: 'thub.addForward', title: 'Add forwarded service' } });
     nodes.push({ kind: 'action', label: 'Release board', icon: 'unlock', command: { command: 'thub.release', title: 'Release' } });
     return nodes;
   }
@@ -113,7 +109,7 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
           left = msUntil(node.board.reservation?.until),
           item = new vscode.TreeItem(node.board.name);
         item.id = 'session:header';
-        item.contextValue = 'session';
+        item.contextValue = s?.ready?.ports.some((p) => p.kind === 'swd') ? 'session.gdb' : 'session';
         item.description = `${formatLeft(left)} · ${s ? linkText(s.link) : 'not connected'}`;
         item.iconPath = new vscode.ThemeIcon(s && s.link !== 'up' && s.link !== 'ended' ? 'sync~spin' : 'lock', left < 10 * 60_000 ? error : accent);
         item.tooltip = new vscode.MarkdownString([
