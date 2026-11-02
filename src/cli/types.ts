@@ -44,7 +44,7 @@ export interface Job {
 }
 
 export interface ConnectPort {
-  kind: 'uart' | 'swd';
+  kind: 'uart' | 'swd' | 'rtt';
   index: number;
   label: string;
   host: string;
@@ -52,12 +52,21 @@ export interface ConnectPort {
   baudRate?: number;
   serial?: string | null;
   target?: string | null;
+  channel?: number;
 }
 
 /** A saved mapping to a loopback service on the Client host. */
 export interface ForwardConfig {
   name: string;
   clientPort: number;
+}
+
+/** An OpenOCD RTT control-block search range and up-channel on one ST-Link. */
+export interface RttConfig {
+  index: number;
+  address: string;
+  size: string;
+  channel: number;
 }
 
 /** `thub connect --json`: a forwarded Client service's local listener. */
@@ -95,6 +104,7 @@ export interface Features {
   reserve: boolean;
   connectNdjson: boolean;
   connectForward: boolean;
+  connectRtt: boolean;
   whoamiJson: boolean;
   /** `thub power <client>` for a reservation's holder (not yet in thub). */
   powerByClient: boolean;

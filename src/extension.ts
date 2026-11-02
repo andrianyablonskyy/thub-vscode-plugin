@@ -16,6 +16,9 @@ import { Power } from './power/Power';
 import { addForward, editForward, removeForward } from './forward/Forwards';
 import { ForwardStore } from './forward/ForwardStore';
 import { ServicePanel } from './forward/ServicePanel';
+import { RttStore } from './rtt/RttStore';
+import { configureRtt, openRtt, removeRtt } from './rtt/Rtt';
+import { RttTerminals } from './rtt/RttTerminal';
 import { reserveFlow } from './reserve/reserveFlow';
 import { Log } from './util/log';
 import { mainFolder, settings } from './util/config';
@@ -27,6 +30,7 @@ const KEY_SECRET = 'thub.key',
 export function activate(context: vscode.ExtensionContext): void {
   const log = new Log(),
     forwardStore = new ForwardStore(context.globalState),
+    rttStore = new RttStore(context.globalState),
     cli = new ThubCli({
       cliPath: settings.cliPath,
       url: settings.url,
@@ -37,9 +41,10 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       log: log.line
     }),
-    mgr = new SessionManager(cli, log.line, forwardStore),
+    mgr = new SessionManager(cli, log.line, forwardStore, rttStore),
     power = new Power(cli, mgr),
     serial = new SerialTerminals(),
+    rttTerminals = new RttTerminals(),
     flasher = new Flasher(mgr, context.workspaceState, log),
     debugTracker = new DebugTracker(() => {
       statusBar.update();
@@ -171,6 +176,32 @@ export function activate(context: vscode.ExtensionContext): void {
     if (n !== undefined){
       serial.show(session, n);
     }
+  });
+  const requireRttFeature = async () => {
+    if (!(await cli.getFeatures()).connectRtt){
+      throw new Error('RTT logs need a newer thub CLI with `connect --rtt`; update @andrian.yablonskyy/thub-agent.');
+    }
+  };
+  command('thub.addRtt', async () => {
+    await requireRttFeature();
+    await configureRtt(mgr, rttTerminals);
+  });
+  command('thub.configureRtt', async (index?: number) => {
+    await requireRttFeature();
+    await configureRtt(mgr, rttTerminals, typeof index === 'number' ? index : undefined);
+  });
+  command('thub.openRtt', async (index?: number) => {
+    if (!Number.isInteger(index) || !index){
+      throw new Error('Select an ST-Link RTT reader to open');
+    }
+    await requireRttFeature();
+    await openRtt(mgr, rttTerminals, index);
+  });
+  command('thub.removeRtt', async (index?: number) => {
+    if (!Number.isInteger(index) || !index){
+      throw new Error('Select an ST-Link RTT reader to remove');
+    }
+    await removeRtt(mgr, rttTerminals, index);
   });
   command('thub.openVideo', async () => {
     const session = await mgr.ensureUp('The camera');

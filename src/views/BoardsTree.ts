@@ -69,7 +69,10 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
         const address = `127.0.0.1:${p.port}`;
         nodes.push(p.kind === 'uart'
           ? { kind: 'endpoint', label: `UART ${p.index}`, address, context: 'endpoint.uart', command: { command: 'thub.openSerial', title: 'Open serial', arguments: [p.index] } }
-          : { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, address, context: 'endpoint.gdb' });
+          : p.kind === 'swd'
+            ? { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, address, context: 'endpoint.gdb' }
+            : { kind: 'endpoint', label: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`, address, context: 'endpoint.rtt',
+              command: { command: 'thub.openRtt', title: 'Open RTT logs', arguments: [p.index] } });
       }
       if (s.ready.video){
         nodes.push({ kind: 'endpoint', label: 'Video', address: s.ready.video.url.replace(/^http:\/\//, ''), context: 'endpoint.video', command: { command: 'thub.openVideo', title: 'Open camera' } });
@@ -78,6 +81,9 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
         nodes.push({ kind: 'forward', service });
       }
       nodes.push(
+        ...(s.ready.ports.some((p) => p.kind === 'swd')
+          ? [{ kind: 'action', label: 'Add RTT reader…', icon: 'add', command: { command: 'thub.addRtt', title: 'Add RTT reader' } } as Node]
+          : []),
         { kind: 'action', label: 'Flash', icon: 'arrow-up', command: { command: 'thub.flash', title: 'Flash' }, primary: true },
         { kind: 'action', label: 'Debug', icon: 'debug-alt', command: { command: 'thub.debug', title: 'Debug' } }
       );
@@ -121,7 +127,8 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
         const item = new vscode.TreeItem(node.label);
         item.description = node.address;
         item.contextValue = node.context;
-        item.iconPath = new vscode.ThemeIcon(node.context === 'endpoint.uart' ? 'terminal' : node.context === 'endpoint.gdb' ? 'debug' : 'device-camera-video');
+        item.iconPath = new vscode.ThemeIcon(node.context === 'endpoint.uart' || node.context === 'endpoint.rtt'
+          ? 'terminal' : node.context === 'endpoint.gdb' ? 'debug' : 'device-camera-video');
         item.tooltip = `${node.label} — ${node.address}`;
         item.command = node.command;
         return item;

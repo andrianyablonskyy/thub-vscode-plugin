@@ -83,7 +83,7 @@ suite('ThubCli', () => {
     };
     const { cli } = make((args) => (args[0] === '--version' ? [0, '1.1.24\n'] : [0, help[args[0]] || '']));
     assert.deepEqual(await cli.getFeatures(), {
-      version: '1.1.24', reserve: true, connectNdjson: true, connectForward: false, whoamiJson: true, powerByClient: false
+      version: '1.1.24', reserve: true, connectNdjson: true, connectForward: false, connectRtt: false, whoamiJson: true, powerByClient: false
     });
   });
 
@@ -111,6 +111,27 @@ suite('ThubCli', () => {
     assert.deepEqual(calls.at(-1)?.args, [
       'connect', 'lab-hw-01', '--json', '--uart-port', '5001', '--gdb-port', '3333', '--video-port', '8090',
       '--forward', 'Web UI=3000', '--forward', 'MQTT=1883'
+    ]);
+  });
+
+  test('connect: RTT search ranges and channels are passed to the Agent', async () => {
+    const help: Record<string, string> = {
+        reserve: '--for <duration>',
+        connect: '--rtt <index=address,size[,channel]>',
+        whoami: '--json',
+        power: '<action> <jobId>'
+      },
+      { cli, calls } = make((args) => args[0] === '--version'
+        ? [0, '1.1.26\n']
+        : args[1] === '--help' ? [0, help[args[0]] || ''] : [0, '']);
+    assert.equal((await cli.getFeatures()).connectRtt, true);
+    await cli.startConnect('lab-hw-01', { uart: 5001, gdb: 3333, video: 8090 }, undefined, [], [
+      { index: 1, address: '0x20000000', size: '0x10000', channel: 0 },
+      { index: 2, address: '0x24000000', size: '0x20000', channel: 1 }
+    ]);
+    assert.deepEqual(calls.at(-1)?.args, [
+      'connect', 'lab-hw-01', '--json', '--uart-port', '5001', '--gdb-port', '3333', '--video-port', '8090',
+      '--rtt', '1=0x20000000,0x10000,0', '--rtt', '2=0x24000000,0x20000,1'
     ]);
   });
 

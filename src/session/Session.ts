@@ -7,7 +7,7 @@ import * as readline from 'node:readline';
 import type { ChildProcess } from 'node:child_process';
 import type { ThubCli } from '../cli/ThubCli';
 import { parseConnectLine } from '../cli/parse';
-import type { ConnectReady, ForwardConfig, Resource } from '../cli/types';
+import type { ConnectReady, ForwardConfig, Resource, RttConfig } from '../cli/types';
 import { freeBlock } from '../util/ports';
 import { settings } from '../util/config';
 
@@ -33,7 +33,9 @@ export class Session implements vscode.Disposable {
   private disposed = false;
   private wasUp = false;
   private restartForwards = false;
+  private restartRtts = false;
   private forwardsVersion = 0;
+  private rttsVersion = 0;
   private fatal?: string;
   private readonly owned: vscode.Disposable[] = [];
   private readonly changed = new vscode.EventEmitter<void>();
@@ -53,7 +55,8 @@ export class Session implements vscode.Disposable {
     readonly target: string | undefined,
     /** Whether the reservation `reservationId` still holds (for restarts). */
     private readonly stillReserved: () => Promise<boolean>,
-    private forwards: ForwardConfig[] = []
+    private forwards: ForwardConfig[] = [],
+    private rtts: RttConfig[] = []
   ){
     this.client = resource.name;
     this.reservationId = resource.reservation?.id || '';
@@ -68,6 +71,11 @@ export class Session implements vscode.Disposable {
   /** ST-Link n's local GDB port. */
   gdbPort(index = 1): number | undefined {
     return this.ready?.ports.find((p) => p.kind === 'swd' && p.index === index)?.port;
+  }
+
+  /** RTT log listener for ST-Link n. */
+  rttPort(index: number): number | undefined {
+    return this.ready?.ports.find((p) => p.kind === 'rtt' && p.index === index)?.port;
   }
 
   get videoUrl(): string | undefined {
@@ -114,6 +122,21 @@ export class Session implements vscode.Disposable {
     }
   }
 
+  updateRtts(rtts: RttConfig[]): void {
+    this.rtts = rtts;
+    this.rttsVersion++;
+    this.ready = undefined;
+    if (this.child){
+      this.restartRtts = true;
+      this.link = 'reconnecting';
+      this.changed.fire();
+      this.child.kill('SIGINT');
+    }
+    else {
+      this.changed.fire();
+    }
+  }
+
   /** Resolves once the link is up (or rejects when the session ends first). */
   whenUp(timeoutMs = 60_000): Promise<void> {
     if (this.isUp){
@@ -140,10 +163,11 @@ export class Session implements vscode.Disposable {
     this.fatal = undefined;
     this.link = this.wasUp ? 'reconnecting' : 'starting';
     this.changed.fire();
-    const forwardsVersion = this.forwardsVersion;
+    const forwardsVersion = this.forwardsVersion,
+      rttsVersion = this.rttsVersion;
     let child: ChildProcess;
     try {
-      child = await this.cli.startConnect(this.client, this.ports, this.target, this.forwards);
+      child = await this.cli.startConnect(this.client, this.ports, this.target, this.forwards, this.rtts);
     }
     catch (err){
       this.lastError = (err as Error).message;
@@ -161,8 +185,9 @@ export class Session implements vscode.Disposable {
       this.lastError = err.message;
     });
     child.on('exit', (code) => this.onExit(child, code));
-    if (forwardsVersion !== this.forwardsVersion){
+    if (forwardsVersion !== this.forwardsVersion || rttsVersion !== this.rttsVersion){
       this.restartForwards = true;
+      this.restartRtts = true;
       child.kill('SIGINT');
     }
   }
@@ -230,8 +255,9 @@ export class Session implements vscode.Disposable {
     if (/reservation (has )?ended|isn't reserved|reserved by/i.test(fatal || '') || !(await this.stillReserved())){
       return this.end(fatal && /ended/i.test(fatal) ? 'Reservation ended' : fatal || 'Reservation ended');
     }
-    if (this.restartForwards){
+    if (this.restartForwards || this.restartRtts){
       this.restartForwards = false;
+      this.restartRtts = false;
       this.lastError = undefined;
       return this.spawn();
     }

@@ -45,7 +45,7 @@ and then put it behind the same `ThubCli` interface so it can be swapped out.
 | Who am I | `thub whoami` |
 | Reserve / extend | `thub reserve <client> --for <dur>` (re-reserving extends from now; max set per runner, default 8h; needs a user key, not a CI token) |
 | Release | `thub release <client>` |
-| Session | `thub connect <client> --target <cfg> --uart-port 5001 --gdb-port 3333 --video-port 8090` |
+| Session | `thub connect <client> --target <cfg> --uart-port 5001 --gdb-port 3333 --video-port 8090 [--rtt <index=address,size[,channel]>]` |
 | Power | `thub power on\|off\|reset <jobId> [--port n] [--delay s]` — see gaps |
 | Jobs | `thub run … --json --detach`, `thub status <id> --json`, `thub jobs --mine --json` |
 
@@ -72,6 +72,8 @@ src/
   video/VideoPanel.ts   camera tab + external player / browser
   power/Power.ts
   forward/Forwards.ts
+  rtt/RttStore.ts       per-resource RTT search range and up-channel
+  rtt/RttTerminal.ts    UTF-8-decoded OpenOCD RTT stream in a VS Code terminal
 test/                   unit (mocha) + integration (@vscode/test-electron)
 ```
 
@@ -179,6 +181,10 @@ name and Client loopback port are persisted per resource in VS Code global
 storage; the Agent assigns a local port automatically. Service rows open a
 VS Code webview and can be updated or removed.
 
+RTT readers use `thub connect --rtt <index=address,size[,channel]>`. The
+memory search range and up-channel are saved locally per resource; OpenOCD
+owns the ST-Link exclusively while the RTT terminal is open.
+
 ## Known gaps in thub (do not fake them)
 
 - **Power during a reservation:** `thub power` is keyed by a job id and works only
@@ -187,6 +193,8 @@ VS Code webview and can be updated or removed.
   outside a job, with a tooltip explaining why.
 - **Custom port forwards:** feature-detect the Agent option
   (`thub connect --help` mentions `--forward`) before adding or updating services.
+- **RTT logs:** feature-detect `--rtt` before configuring a reader; its
+  OpenOCD memory range must cover the firmware's SEGGER RTT control block.
 - **Machine-readable connect output:** prefer `thub connect --json` (NDJSON
   events) when available; otherwise rely on pinned ports.
 

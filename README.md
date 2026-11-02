@@ -17,7 +17,7 @@ Work on the boards in your **TestHub** lab without leaving the editor: reserve a
 1. Run **thub: Sign in**, then enter your Coordinator's address and your access key. The key is kept in VS Code's secret storage.
 2. Open the **thub** view in the activity bar. You see **My session**, **Boards** and **Recent jobs**.
 3. Click an idle board, or run **thub: Reserve board…**. Pick the board, then how long (30m, 2h, 4h, 8h or your own). Leave **Connect right away** on.
-4. Once it's connected, **My session** lists its UARTs, its GDB port, its camera and any forwarded services, with **Flash**, **Debug** and **Release board**.
+4. Once it's connected, **My session** lists its UARTs, its GDB port, RTT readers, its camera and any forwarded services, with **Flash**, **Debug** and **Release board**.
 
 While you hold the board, only your jobs run on it. Ten minutes before the reservation ends, you're offered **Extend 1h** or **Release now**. When it ends, its terminals, camera and debug session close.
 
@@ -61,6 +61,10 @@ The extension makes sure the board is reserved and connected, then starts Cortex
 
 The same port is a plain TCP socket, `127.0.0.1:5001` and up. Other tools can use it too, for example pyserial's `socket://127.0.0.1:5001`.
 
+## RTT logs
+
+Choose **Add RTT reader…** under **My session** and select an ST-Link. Enter the RAM search start address and size that cover the firmware's SEGGER RTT control block (from its linker map); channel 0 is the usual log channel. The setup is saved locally per resource and restored on reconnect. Open the **RTT · ST-Link · CH** entry to read the UTF-8 stream in a VS Code terminal. OpenOCD uses the ST-Link exclusively during RTT capture, so close the RTT terminal before debugging or flashing.
+
 ## Camera
 
 On a board whose runner has a camera (label `video-stream`), **thub: Open camera** shows it. **thub.video.mode** chooses where:
@@ -73,7 +77,7 @@ The stream's address is unique to your reservation and stops when the reservatio
 
 ## Ports
 
-The **thub Ports** panel lists every local port of your session (UARTs, GDB, camera and forwarded services). Use **Add forwarded service…** under **My session** or in the Ports panel, then enter a name and a port on the Client host, such as `Web UI` and `3000`. Services are saved locally per resource, restored on reconnect, and can be updated or removed from their tree item or Ports row. Their local tunnel port is assigned automatically; select a service in the tree or choose **Open** in Ports to view its page inside VS Code.
+The **thub Ports** panel lists every local port of your session (UARTs, GDB, RTT, camera and forwarded services). Use **Add forwarded service…** under **My session** or in the Ports panel, then enter a name and a port on the Client host, such as `Web UI` and `3000`. Services are saved locally per resource, restored on reconnect, and can be updated or removed from their tree item or Ports row. Their local tunnel port is assigned automatically; select a service in the tree or choose **Open** in Ports to view its page inside VS Code.
 
 ## Limitations
 

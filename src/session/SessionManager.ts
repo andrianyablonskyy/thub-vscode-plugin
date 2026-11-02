@@ -4,8 +4,9 @@
 import * as vscode from 'vscode';
 import { ThubError, type ThubCli } from '../cli/ThubCli';
 import { boardState, formatLeft, msUntil } from '../cli/parse';
-import type { ForwardConfig, Job, Me, Resource } from '../cli/types';
+import type { ForwardConfig, Job, Me, Resource, RttConfig } from '../cli/types';
 import { ForwardStore, normalizeForwards } from '../forward/ForwardStore';
+import { RttStore, normalizeRtts } from '../rtt/RttStore';
 import { Session } from './Session';
 import { settings } from '../util/config';
 
@@ -33,7 +34,12 @@ export class SessionManager implements vscode.Disposable {
   private warned = new Set<string>();
   private refreshing?: Promise<void>;
 
-  constructor(private readonly cli: ThubCli, private readonly log: (line: string) => void, private readonly forwardStore: ForwardStore){
+  constructor(
+    private readonly cli: ThubCli,
+    private readonly log: (line: string) => void,
+    private readonly forwardStore: ForwardStore,
+    private readonly rttStore: RttStore
+  ){
     // The countdown, the 10-minute warning and the end check run every 15 s.
     this.ticker = setInterval(() => this.tick(), POLL_MS);
   }
@@ -194,6 +200,27 @@ export class SessionManager implements vscode.Disposable {
     this.changed.fire();
   }
 
+  get rttConfigs(): RttConfig[] {
+    return this.mine ? this.rttStore.read(this.mine.id) : [];
+  }
+
+  async setRttConfigs(configs: unknown): Promise<void> {
+    const mine = this.mine;
+    if (!mine){
+      throw new Error('Reserve a board before configuring RTT logs');
+    }
+    const checked = normalizeRtts(configs);
+    if (checked.length && !(await this.cli.getFeatures()).connectRtt){
+      throw new Error('RTT logs need a newer thub CLI with `connect --rtt`; update @andrian.yablonskyy/thub-agent.');
+    }
+    await this.rttStore.write(mine.id, checked);
+    const reservationId = mine.reservation?.id;
+    if (reservationId && this.session?.reservationId === reservationId){
+      this.session.updateRtts(checked);
+    }
+    this.changed.fire();
+  }
+
   /** The session of my reservation — started if it isn't yet. */
   async connect(target?: string): Promise<Session> {
     const mine = this.mine;
@@ -208,12 +235,16 @@ export class SessionManager implements vscode.Disposable {
     if (forwards.length && !(await this.cli.getFeatures()).connectForward){
       throw new Error('Your saved forwarded services need a newer thub CLI with `connect --forward`; update @andrian.yablonskyy/thub-agent.');
     }
+    const rtts = this.rttStore.read(mine.id);
+    if (rtts.length && !(await this.cli.getFeatures()).connectRtt){
+      throw new Error('Your saved RTT setup needs a newer thub CLI with `connect --rtt`; update @andrian.yablonskyy/thub-agent.');
+    }
     this.session?.end('Replaced');
     const id = reservationId,
       session = new Session(this.cli, this.log, mine, target || settings.defaultTarget() || undefined, async () => {
         await this.refresh();
         return this.mine?.reservation?.id === id;
-      }, forwards);
+      }, forwards, rtts);
     this.session = session;
     void vscode.commands.executeCommand('setContext', 'thub.hasSession', true);
     session.onDidChange(() => {

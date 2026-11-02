@@ -57,6 +57,19 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
           actions: [{ label: 'Open terminal', msg: { type: 'serial', index: p.index }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` } }]
         });
       }
+      else if (p.kind === 'rtt'){
+        rows.push({
+          icon: 'terminal', name: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`,
+          remote: `OpenOCD RTT up-channel · ${p.label}`, local: addr,
+          status: s.isUp ? { text: 'reading available', tone: 'ok' } : { text: s.link, tone: 'idle' },
+          actions: [
+            { label: 'Open logs', msg: { type: 'command', command: 'thub.openRtt', index: p.index }, primary: true },
+            { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` } },
+            { label: 'Configure', msg: { type: 'command', command: 'thub.configureRtt', index: p.index } },
+            { label: 'Remove', msg: { type: 'command', command: 'thub.removeRtt', index: p.index } }
+          ]
+        });
+      }
       else {
         const debugging = this.debug.active?.configuration.thubReservation === s.reservationId;
         rows.push({
@@ -106,7 +119,8 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
       hasSession: Boolean(s),
       hasReservation: Boolean(this.mgr.mine),
       rows: this.rows(),
-      canForward: f.connectForward
+      canForward: f.connectForward,
+      canRtt: f.connectRtt && Boolean(s?.ready?.ports.some((port) => port.kind === 'swd'))
     });
   }
 
@@ -122,7 +136,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
       void vscode.window.setStatusBarMessage(`thub: copied ${m.text}`, 3000);
     }
     else if (m.type === 'command' && m.command?.startsWith('thub.')){
-      await vscode.commands.executeCommand(m.command, m.name);
+      await vscode.commands.executeCommand(m.command, m.index ?? m.name);
     }
   }
 
@@ -131,7 +145,8 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
 <div class="top"><span></span><span class="muted" id="header"></span></div>
 <div id="empty" class="muted"></div>
 <table id="table"><thead><tr><th>Name</th><th>On the board's Client</th><th>Local address</th><th>Status</th><th class="right">Actions</th></tr></thead><tbody id="rows"></tbody></table>
-<div id="forward" class="muted small"></div>`,
+<div id="forward" class="muted small"></div>
+<div id="rtt" class="muted small"></div>`,
       css = `
 body { padding: 6px 16px; }
 .top { display: flex; justify-content: space-between; margin-bottom: 4px; }
@@ -165,6 +180,10 @@ window.addEventListener('message', ({ data }) => {
     ? '<button id="addForward">Add forwarded service…</button>'
     : data.hasReservation ? 'Forwarded services need a newer thub CLI with connect --forward.' : '';
   $('#addForward')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.addForward' }));
+  $('#rtt').innerHTML = data.canRtt && data.hasSession
+    ? '<button id="addRtt">Add RTT reader…</button>'
+    : data.hasSession ? 'RTT logs need a newer thub CLI with connect --rtt.' : '';
+  $('#addRtt')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.addRtt' }));
 });
 vscode.postMessage({ type: 'ready' });
 `;
