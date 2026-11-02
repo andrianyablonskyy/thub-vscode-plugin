@@ -2,7 +2,7 @@
 
 What changed in each release, newest first. `## Unreleased` collects the changes since the version on the VS Code Marketplace; `bin/publish` turns that heading into the version and date it releases, and publishes this file as the extension's changelog.
 
-## Unreleased
+## 0.1.5 — 2026-11-02
 
 ### Fixed
 
