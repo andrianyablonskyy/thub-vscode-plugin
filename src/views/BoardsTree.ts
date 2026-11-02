@@ -16,7 +16,7 @@ const accent = new vscode.ThemeColor('thub.accent'),
 type Node =
   | { kind: 'section'; id: 'session' | 'boards' | 'jobs' }
   | { kind: 'sessionHeader'; board: Resource }
-  | { kind: 'endpoint'; label: string; address: string; context: string; command?: vscode.Command }
+  | { kind: 'endpoint'; label: string; context: string; command?: vscode.Command }
   | { kind: 'forward'; service: ConnectForward }
   | { kind: 'action'; label: string; icon: string; command: vscode.Command; primary?: boolean }
   | { kind: 'board'; board: Resource }
@@ -66,16 +66,15 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       nodes: Node[] = [{ kind: 'sessionHeader', board }];
     if (s?.ready){
       for (const p of s.ready.ports){
-        const address = `127.0.0.1:${p.port}`;
         nodes.push(p.kind === 'uart'
-          ? { kind: 'endpoint', label: `UART ${p.index}`, address, context: 'endpoint.uart', command: { command: 'thub.openSerial', title: 'Open serial', arguments: [p.index] } }
+          ? { kind: 'endpoint', label: `UART ${p.index}`, context: 'endpoint.uart', command: { command: 'thub.openSerial', title: 'Open serial', arguments: [p.index] } }
           : p.kind === 'swd'
-            ? { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, address, context: 'endpoint.gdb' }
-            : { kind: 'endpoint', label: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`, address, context: 'endpoint.rtt',
+            ? { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, context: 'endpoint.gdb' }
+            : { kind: 'endpoint', label: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`, context: 'endpoint.rtt',
               command: { command: 'thub.openRtt', title: 'Open RTT logs', arguments: [p.index] } });
       }
       if (s.ready.video){
-        nodes.push({ kind: 'endpoint', label: 'Video', address: s.ready.video.url.replace(/^http:\/\//, ''), context: 'endpoint.video', command: { command: 'thub.openVideo', title: 'Open camera' } });
+        nodes.push({ kind: 'endpoint', label: 'Video', context: 'endpoint.video', command: { command: 'thub.openVideo', title: 'Open camera' } });
       }
       for (const service of s.ready.forwards || []){
         nodes.push({ kind: 'forward', service });
@@ -121,21 +120,20 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       }
       case 'endpoint': {
         const item = new vscode.TreeItem(node.label);
-        item.description = node.address;
         item.contextValue = node.context;
         item.iconPath = new vscode.ThemeIcon(node.context === 'endpoint.uart' || node.context === 'endpoint.rtt'
           ? 'terminal' : node.context === 'endpoint.gdb' ? 'debug' : 'device-camera-video');
-        item.tooltip = `${node.label} — ${node.address}`;
+        item.tooltip = node.label;
         item.command = node.command;
         return item;
       }
       case 'forward': {
         const { service } = node,
-          item = new vscode.TreeItem(service.name);
-        item.description = `localhost:${service.clientPort} → 127.0.0.1:${service.port}`;
+          label = `${service.name} [${service.clientPort}]`,
+          item = new vscode.TreeItem(label);
         item.contextValue = 'endpoint.forward';
         item.iconPath = new vscode.ThemeIcon('globe');
-        item.tooltip = `${service.name} on the Client's localhost:${service.clientPort}`;
+        item.tooltip = label;
         item.command = { command: 'thub.openForward', title: 'Open forwarded service', arguments: [service.name] };
         return item;
       }
