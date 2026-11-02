@@ -47,6 +47,28 @@ suite('ThubCli', () => {
     assert.equal(calls[0].env.THUB_NO_SELF_UPDATE, '1');
   });
 
+  test('runs the npm Windows command shim through PowerShell without interpolating arguments', async () => {
+    const f = fakeSpawn(() => [0, '{"ok":true}']),
+      cli = new ThubCli({
+        cliPath: () => 'C:\\Users\\Developer\\App Data\\npm\\thub.cmd',
+        url: () => undefined,
+        key: async () => undefined,
+        log: () => {},
+        spawn: f.spawn,
+        platform: 'win32'
+      });
+    await cli.run(['resources', '--filter', 'lab & echo unsafe']);
+    const call = f.calls[0],
+      encodedScript = call.args.at(-1);
+    assert.equal(call.cmd, 'powershell.exe');
+    assert.equal(call.args.slice(0, -1).join(' '), '-NoLogo -NoProfile -NonInteractive -EncodedCommand');
+    assert.deepEqual(JSON.parse(Buffer.from(call.env.THUB_CLI_INVOCATION!, 'base64').toString('utf8')), {
+      command: 'C:\\Users\\Developer\\App Data\\npm\\thub.cmd',
+      args: ['resources', '--filter', 'lab & echo unsafe']
+    });
+    assert.match(Buffer.from(encodedScript!, 'base64').toString('utf16le'), /& \$request\.command @arguments/);
+  });
+
   test('exit 4 is an auth/usage error with thub\'s message; the key never reaches the log', async () => {
     const { cli, logs } = make(() => [4, '', 'Error: Invalid or revoked access key thk_secret_key\n']);
     await assert.rejects(cli.resources(), (err: unknown) => err instanceof ThubError && err.kind === 'auth' && err.code === 4 &&

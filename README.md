@@ -7,6 +7,7 @@ Work on the boards in your **TestHub** lab without leaving the editor: reserve a
 ## What you need
 
 - **The thub CLI** (the TestHub Agent) 1.1.24 or newer: `npm i -g @andrian.yablonskyy/thub-agent`. The extension runs it for everything, and offers to install it if it's missing.
+- **Node.js 24 or newer** and npm: install from [nodejs.org](https://nodejs.org/) (the extension uses the Agent's `thub` CLI; VS Code's bundled Node is not a substitute). On Windows, install the Agent from PowerShell with `npm install --global @andrian.yablonskyy/thub-agent`, then restart VS Code so it inherits npm's updated `PATH`.
 - **An access key** for your Coordinator, from your dashboard profile or an admin.
 - **An ARM GDB** for flashing and debugging: `arm-none-eabi-gdb` (macOS: `brew install --cask gcc-arm-embedded`), or `gdb-multiarch` (set **thub.gdbPath**).
 - **[Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug)** is installed with the extension; the `thub` debug type hands over to it.
@@ -18,6 +19,8 @@ Work on the boards in your **TestHub** lab without leaving the editor: reserve a
 2. Open the **thub** view in the activity bar. You see **My session**, **Boards** and **Recent jobs**.
 3. Click an idle board, or run **thub: Reserve board…**. Pick the board, then how long (30m, 2h, 4h, 8h or your own). Leave **Connect right away** on.
 4. Once it's connected, **My session** lists its UARTs, its GDB port, RTT readers, its camera and any forwarded services, with **Flash**, **Debug** and **Release board**.
+
+On Windows, install the Agent globally as above and ensure `thub.cmd` is on `PATH` for the VS Code process. For flashing and debugging, install a Windows ARM GNU Toolchain and set **thub.gdbPath** to its `arm-none-eabi-gdb.exe` if it isn't on `PATH`. Likewise, set **thub.video.ffmpegPath** or **thub.video.player** to the `.exe` path when optional video tools are not on `PATH`.
 
 While you hold the board, only your jobs run on it. Ten minutes before the reservation ends, you're offered **Extend 1h** or **Release now**. When it ends, its terminals, camera and debug session close.
 

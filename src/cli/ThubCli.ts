@@ -2,7 +2,7 @@
 // Coordinator goes through here. No VS Code dependency, so it's unit-tested
 // with a fake spawn.
 
-import { spawn as spawnProcess, type ChildProcess, type SpawnOptions } from 'node:child_process';
+import { spawn as spawnProcess, spawnSync, type ChildProcess, type SpawnOptions } from 'node:child_process';
 import { errorMessage, exitKind, mask, parseJsonOutput, type ExitKind } from './parse';
 import type { Features, ForwardConfig, Job, Me, Resource, RttConfig } from './types';
 
@@ -17,6 +17,7 @@ export interface CliOptions {
   key: () => Promise<string | undefined>;
   log: (line: string) => void;
   spawn?: SpawnFn;
+  platform?: NodeJS.Platform;
 }
 
 export interface RunResult {
@@ -36,13 +37,47 @@ export class ThubError extends Error {
 export class ThubCli {
   private features?: Promise<Features>;
   private readonly spawnFn: SpawnFn;
+  private readonly platform: NodeJS.Platform;
 
   constructor(private readonly opts: CliOptions){
     this.spawnFn = opts.spawn ?? spawnProcess;
+    this.platform = opts.platform ?? process.platform;
   }
 
   get command(): string {
     return this.opts.cliPath().trim() || 'thub';
+  }
+
+  private launch(args: string[], options: SpawnOptions): ChildProcess {
+    const command = this.command;
+    if (this.platform !== 'win32'){
+      return this.spawnFn(command, args, options);
+    }
+
+    const invocation = Buffer.from(JSON.stringify({ command, args }), 'utf8').toString('base64'),
+      script = [
+        '$request = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:THUB_CLI_INVOCATION)) | ConvertFrom-Json',
+        '$arguments = [string[]]$request.args',
+        '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)',
+        '$OutputEncoding = [Console]::OutputEncoding',
+        '& $request.command @arguments',
+        'exit $LASTEXITCODE'
+      ].join('; '),
+      encodedScript = Buffer.from(script, 'utf16le').toString('base64'),
+      env = { ...(options.env as NodeJS.ProcessEnv), THUB_CLI_INVOCATION: invocation },
+      child = this.spawnFn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', encodedScript], { ...options, env });
+    if (child.pid){
+      const kill = child.kill.bind(child);
+      child.kill = (signal) => {
+        const result = spawnSync('taskkill.exe', ['/pid', String(child.pid), '/t', '/f'], { stdio: 'ignore', windowsHide: true });
+        if (result.error || result.status !== 0){
+          this.opts.log(`Unable to terminate the thub process tree${result.error ? `: ${result.error.message}` : ''}`);
+          return kill(signal);
+        }
+        return true;
+      };
+    }
+    return child;
   }
 
   /** The child's environment: URL and key from VS Code, self-update off. */
@@ -67,7 +102,7 @@ export class ThubCli {
     return new Promise((resolve, reject) => {
       let child: ChildProcess;
       try {
-        child = this.spawnFn(this.command, args, { env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+        child = this.launch(args, { env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
       }
       catch (err){
         return reject(err);
@@ -208,6 +243,6 @@ export class ThubCli {
       ...rtts.flatMap((r) => ['--rtt', `${r.index}=${r.address},${r.size},${r.channel}`]),
       ...(target ? ['--target', target] : [])];
     this.opts.log(`$ thub ${args.join(' ')}`);
-    return this.spawnFn(this.command, args, { env: await this.env(), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    return this.launch(args, { env: await this.env(), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   }
 }
