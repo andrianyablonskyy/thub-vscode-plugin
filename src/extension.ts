@@ -57,7 +57,7 @@ export function activate(context: vscode.ExtensionContext): void {
     fab = new FlashAfterBuild(mgr, flasher, power, serial, context.workspaceState, log.line),
     tree = new BoardsTree(mgr),
     treeView = vscode.window.createTreeView('thub.boards', { treeDataProvider: tree, showCollapseAll: false }),
-    ports = new PortsView(mgr, debugTracker, () => cli.getFeatures()),
+    ports = new PortsView(mgr, debugTracker, () => cli.getFeatures(), log.line),
     statusBar = new StatusBar(mgr, debugTracker);
 
   context.subscriptions.push(

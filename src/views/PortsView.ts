@@ -22,22 +22,38 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
   private readonly subs: vscode.Disposable[] = [];
   private timer?: NodeJS.Timeout;
 
-  constructor(private readonly mgr: SessionManager, private readonly debug: DebugTracker, private readonly features: () => Promise<Features>){
-    this.subs.push(mgr.onDidChange(() => void this.post()));
+  constructor(
+    private readonly mgr: SessionManager,
+    private readonly debug: DebugTracker,
+    private readonly features: () => Promise<Features>,
+    private readonly log: (line: string) => void
+  ){
+    this.subs.push(mgr.onDidChange(() => this.postSafely()));
   }
 
   resolveWebviewView(view: vscode.WebviewView): void {
+    clearInterval(this.timer);
     this.view = view;
     view.webview.options = { enableScripts: true };
     view.webview.html = this.html(view.webview);
-    view.webview.onDidReceiveMessage((m) => void this.onMessage(m));
+    const messageSubscription = view.webview.onDidReceiveMessage((m) => {
+      void this.onMessage(m).catch((err: unknown) => this.log(`Ports view message failed: ${errorText(err)}`));
+    });
     // Terminal client counts change without a session event.
-    this.timer = setInterval(() => view.visible && void this.post(), 2000);
-    view.onDidDispose(() => clearInterval(this.timer));
+    const timer = setInterval(() => view.visible && this.postSafely(), 2000);
+    this.timer = timer;
+    view.onDidDispose(() => {
+      messageSubscription.dispose();
+      clearInterval(timer);
+      if (this.view === view){
+        this.view = undefined;
+        this.timer = undefined;
+      }
+    });
   }
 
   refresh(): void {
-    void this.post();
+    this.postSafely();
   }
 
   private rows(): Row[] {
@@ -107,13 +123,22 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
     return rows;
   }
 
+  private postSafely(): void {
+    void this.post().catch((err: unknown) => this.log(`Ports view update failed: ${errorText(err)}`));
+  }
+
   private async post(): Promise<void> {
-    if (!this.view){
+    const view = this.view;
+    if (!view){
       return;
     }
     const s = this.mgr.session,
       f = await this.features();
-    await this.view.webview.postMessage({
+    if (this.view !== view){
+      return;
+    }
+    try {
+      await view.webview.postMessage({
       type: 'state',
       header: s ? `${s.client} · ${linkText(s.link)}` : '',
       hasSession: Boolean(s),
@@ -121,7 +146,14 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
       rows: this.rows(),
       canForward: f.connectForward,
       canRtt: f.connectRtt && Boolean(s?.ready?.ports.some((port) => port.kind === 'swd'))
-    });
+      });
+    }
+    catch (err){
+      if (this.view !== view){
+        return;
+      }
+      throw err;
+    }
   }
 
   private async onMessage(m: { type: string; index?: number; text?: string; command?: string; name?: string }): Promise<void> {
@@ -192,8 +224,13 @@ vscode.postMessage({ type: 'ready' });
 
   dispose(): void {
     clearInterval(this.timer);
+    this.view = undefined;
     this.subs.forEach((s) => s.dispose());
   }
+}
+
+function errorText(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }
 
 export function linkText(link: string): string {
