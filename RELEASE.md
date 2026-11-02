@@ -2,6 +2,12 @@
 
 What changed in each release, newest first. `## Unreleased` collects the changes since the version on the VS Code Marketplace; `bin/publish` turns that heading into the version and date it releases, and publishes this file as the extension's changelog.
 
+## Unreleased
+
+### Changed
+
+- **Ports view actions:** move Add RTT reader and Add forwarded service to the resource session header as icon buttons. RTT and forwarded-service row actions use accessible icons for open, copy, configure/update, and remove.
+
 ## 0.1.2 — 2026-11-02
 
 ### Changed
