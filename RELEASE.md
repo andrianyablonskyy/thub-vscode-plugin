@@ -7,8 +7,11 @@ What changed in each release, newest first. `## Unreleased` collects the changes
 ### Added
 
 - **SEGGER RTT logs:** configure a per-resource ST-Link memory search range and up-channel, then read the UTF-8 stream in a reconnecting VS Code terminal. RTT capture reserves that probe against concurrent GDB use.
+- **Named Client services:** save any number of per-resource service names and Client ports, restore them on reconnect, edit or remove them, and open forwarded web pages in a VS Code webview.
 
 ### Changed
+
+- **Windows workstation support:** invoke the Agent's `thub.cmd` through PowerShell with arguments passed separately, UTF-8 output, and process-tree cleanup. Install Node.js 24+ and the Agent CLI before using the extension.
 
 - **Release notes:** the Marketplace's changelog is now this file, `RELEASE.md`, with one section per version (it was `CHANGELOG.md`). `bin/publish` releases the extension like the other TestHub packages: it stamps these notes, publishes to the Marketplace with `vsce publish`, and pushes the version's tag.
 
