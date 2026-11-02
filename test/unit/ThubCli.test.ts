@@ -93,6 +93,27 @@ suite('ThubCli', () => {
     assert.deepEqual(calls[0].args, ['connect', 'lab-hw-01', '--json', '--uart-port', '5001', '--gdb-port', '3333', '--video-port', '8090', '--target', 'stm32l4x']);
   });
 
+  test('connect: named Client services are passed as repeatable forwards', async () => {
+    const help: Record<string, string> = {
+        reserve: '--for <duration>',
+        connect: '--forward <name=port>',
+        whoami: '--json',
+        power: '<action> <jobId>'
+      },
+      { cli, calls } = make((args) => args[0] === '--version'
+        ? [0, '1.1.25\n']
+        : args[1] === '--help' ? [0, help[args[0]] || ''] : [0, '']);
+    assert.equal((await cli.getFeatures()).connectForward, true);
+    await cli.startConnect('lab-hw-01', { uart: 5001, gdb: 3333, video: 8090 }, undefined, [
+      { name: 'Web UI', clientPort: 3000 },
+      { name: 'MQTT', clientPort: 1883 }
+    ]);
+    assert.deepEqual(calls.at(-1)?.args, [
+      'connect', 'lab-hw-01', '--json', '--uart-port', '5001', '--gdb-port', '3333', '--video-port', '8090',
+      '--forward', 'Web UI=3000', '--forward', 'MQTT=1883'
+    ]);
+  });
+
   test('whoami from an older thub without --json: its text', async () => {
     const { cli } = make((args) => (args[0] === 'whoami' && args[1] !== '--help' ? [0, 'alice (User) <a@example.com>\nJobs run in: any resource (no group)\n'] : [0, '']));
     assert.deepEqual(await cli.whoami(), { kind: 'cli', user: { username: 'alice', role: 'user' } });

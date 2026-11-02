@@ -1,6 +1,5 @@
 // "THUB PORTS" (design: artboard 5): every local port of the session — UARTs,
-// GDB, camera — with Open / Copy actions; custom forwards only where the
-// thub CLI supports them (`thub connect --forward`).
+// GDB, camera and named Client services — with Open / Copy actions.
 
 import * as vscode from 'vscode';
 import type { SessionManager } from '../session/SessionManager';
@@ -80,6 +79,18 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
         actions: [{ label: 'Open', msg: { type: 'command', command: 'thub.openVideo' }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: ready.video.url } }]
       });
     }
+    for (const service of ready.forwards || []){
+      rows.push({
+        icon: 'arrow', name: service.name, remote: `localhost:${service.clientPort}`, local: `127.0.0.1:${service.port}`,
+        status: s.isUp ? { text: 'forwarding', tone: 'ok' } : { text: s.link, tone: 'idle' },
+        actions: [
+          { label: 'Open', msg: { type: 'command', command: 'thub.openForward', name: service.name }, primary: true },
+          { label: 'Copy', msg: { type: 'command', command: 'thub.copyForward', name: service.name } },
+          { label: 'Update', msg: { type: 'command', command: 'thub.updateForward', name: service.name } },
+          { label: 'Remove', msg: { type: 'command', command: 'thub.removeForward', name: service.name } }
+        ]
+      });
+    }
     return rows;
   }
 
@@ -99,7 +110,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
     });
   }
 
-  private async onMessage(m: { type: string; index?: number; text?: string; command?: string }): Promise<void> {
+  private async onMessage(m: { type: string; index?: number; text?: string; command?: string; name?: string }): Promise<void> {
     if (m.type === 'ready'){
       return this.post();
     }
@@ -111,7 +122,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
       void vscode.window.setStatusBarMessage(`thub: copied ${m.text}`, 3000);
     }
     else if (m.type === 'command' && m.command?.startsWith('thub.')){
-      await vscode.commands.executeCommand(m.command);
+      await vscode.commands.executeCommand(m.command, m.name);
     }
   }
 
@@ -150,8 +161,10 @@ window.addEventListener('message', ({ data }) => {
     '</td><td class="local">' + esc(r.local) + '</td><td class="tone-' + r.status.tone + '"><span class="dot ' + (r.status.tone === 'ok' ? 'ok' : r.status.tone === 'err' ? 'err' : 'idle') + '"></span>' +
     esc(r.status.text) + '</td><td class="right">' + r.actions.map((a, j) => '<button class="act' + (a.primary ? ' primary' : '') + '" data-r="' + i + '" data-a="' + j + '">' + esc(a.label) + '</button>').join('') + '</td></tr>').join('');
   document.querySelectorAll('.act').forEach((b) => b.onclick = () => vscode.postMessage(data.rows[b.dataset.r].actions[b.dataset.a].msg));
-  $('#forward').textContent = !data.rows.length ? '' : data.canForward ? '' :
-    'Custom port forwards (a host:port on the Client to a local port) need a thub CLI with connect --forward — not available yet.';
+  $('#forward').innerHTML = data.canForward && data.hasReservation
+    ? '<button id="addForward">Add forwarded service…</button>'
+    : data.hasReservation ? 'Forwarded services need a newer thub CLI with connect --forward.' : '';
+  $('#addForward')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.addForward' }));
 });
 vscode.postMessage({ type: 'ready' });
 `;

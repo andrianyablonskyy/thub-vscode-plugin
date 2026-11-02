@@ -170,8 +170,14 @@ Buttons: Power-cycle, On, Off; port and off-time pickers.
 
 ### Port forwarding / URL proxy
 "THUB PORTS" panel lists UARTs, GDB, video and custom forwards with Open /
-Copy / Stop actions, plus a form (name, host:port on the Client, local port).
-HTTP forwards get "Open in browser" and "Preview" (Simple Browser).
+Copy / Update / Remove actions, plus a form for the service name and Client
+loopback port. Local ports are assigned automatically; web services open in a
+VS Code webview.
+
+Custom forwards use `thub connect --forward <name=client-port>`. The service
+name and Client loopback port are persisted per resource in VS Code global
+storage; the Agent assigns a local port automatically. Service rows open a
+VS Code webview and can be updated or removed.
 
 ## Known gaps in thub (do not fake them)
 
@@ -179,8 +185,8 @@ HTTP forwards get "Open in browser" and "Preview" (Simple Browser).
   for the owner's PREPARING/RUNNING job. Until the Coordinator supports
   `thub power <client>` for the reservation holder, disable power buttons
   outside a job, with a tooltip explaining why.
-- **Custom port forwards:** `thub connect` has no `--forward`. Hide the forward
-  form behind a capability check (`thub connect --help` mentions `--forward`).
+- **Custom port forwards:** feature-detect the Agent option
+  (`thub connect --help` mentions `--forward`) before adding or updating services.
 - **Machine-readable connect output:** prefer `thub connect --json` (NDJSON
   events) when available; otherwise rely on pinned ports.
 
@@ -214,7 +220,8 @@ Settings: `thub.url`, `thub.cliPath`, `thub.gdbPath`, `thub.defaultTarget`,
 Commands (`thub.*`): `signIn`, `refresh`, `reserve`, `extend`, `release`,
 `connect`, `flash`, `buildAndFlash`, `configureFlashAfterBuild`,
 `toggleFlashAfterBuild`, `debug`, `openSerial`, `openVideo`, `powerCycle`,
-`powerOn`, `powerOff`, `forwardPort`, `copyEndpoint`.
+`powerOn`, `powerOff`, `addForward`, `updateForward`, `removeForward`,
+`openForward`, `copyForward`, `copyEndpoint`.
 
 ## Development
 

@@ -17,7 +17,7 @@ Work on the boards in your **TestHub** lab without leaving the editor: reserve a
 1. Run **thub: Sign in**, then enter your Coordinator's address and your access key. The key is kept in VS Code's secret storage.
 2. Open the **thub** view in the activity bar. You see **My session**, **Boards** and **Recent jobs**.
 3. Click an idle board, or run **thub: Reserve board…**. Pick the board, then how long (30m, 2h, 4h, 8h or your own). Leave **Connect right away** on.
-4. Once it's connected, **My session** lists its UARTs, its GDB port and its camera, with **Flash**, **Debug** and **Release board**.
+4. Once it's connected, **My session** lists its UARTs, its GDB port, its camera and any forwarded services, with **Flash**, **Debug** and **Release board**.
 
 While you hold the board, only your jobs run on it. Ten minutes before the reservation ends, you're offered **Extend 1h** or **Release now**. When it ends, its terminals, camera and debug session close.
 
@@ -73,14 +73,14 @@ The stream's address is unique to your reservation and stops when the reservatio
 
 ## Ports
 
-The **thub Ports** panel lists every local port of your session (UARTs, GDB, camera) with Open, Debug, Flash and Copy actions.
+The **thub Ports** panel lists every local port of your session (UARTs, GDB, camera and forwarded services). Use **Add forwarded service…** under **My session** or in the Ports panel, then enter a name and a port on the Client host, such as `Web UI` and `3000`. Services are saved locally per resource, restored on reconnect, and can be updated or removed from their tree item or Ports row. Their local tunnel port is assigned automatically; select a service in the tree or choose **Open** in Ports to view its page inside VS Code.
 
-## Not available yet
+## Limitations
 
 These depend on thub features that don't exist yet. The extension says so instead of pretending:
 
 - **USB power during a reservation.** Power-cycle, On and Off work only while a job of yours runs on the board, because `thub power` is keyed by a job.
-- **Custom port forwards** (a host:port on the board's Client). They need `thub connect --forward`.
+- Forwarded services must listen on `127.0.0.1` on the Client host.
 
 ## Settings
 

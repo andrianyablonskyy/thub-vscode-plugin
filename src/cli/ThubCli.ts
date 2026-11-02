@@ -4,7 +4,7 @@
 
 import { spawn as spawnProcess, type ChildProcess, type SpawnOptions } from 'node:child_process';
 import { errorMessage, exitKind, mask, parseJsonOutput, type ExitKind } from './parse';
-import type { Features, Job, Me, Resource } from './types';
+import type { Features, ForwardConfig, Job, Me, Resource } from './types';
 
 export type SpawnFn = (command: string, args: string[], options: SpawnOptions) => ChildProcess;
 
@@ -194,9 +194,10 @@ export class ThubCli {
   }
 
   /** The long-lived `thub connect` child of a session. */
-  async startConnect(client: string, ports: { uart: number; gdb: number; video: number }, target?: string): Promise<ChildProcess> {
+  async startConnect(client: string, ports: { uart: number; gdb: number; video: number }, target?: string, forwards: ForwardConfig[] = []): Promise<ChildProcess> {
     const args = ['connect', client, '--json',
       '--uart-port', String(ports.uart), '--gdb-port', String(ports.gdb), '--video-port', String(ports.video),
+      ...forwards.flatMap((f) => ['--forward', `${f.name}=${f.clientPort}`]),
       ...(target ? ['--target', target] : [])];
     this.opts.log(`$ thub ${args.join(' ')}`);
     return this.spawnFn(this.command, args, { env: await this.env(), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });

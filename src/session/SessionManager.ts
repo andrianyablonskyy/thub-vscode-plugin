@@ -4,7 +4,8 @@
 import * as vscode from 'vscode';
 import { ThubError, type ThubCli } from '../cli/ThubCli';
 import { boardState, formatLeft, msUntil } from '../cli/parse';
-import type { Job, Me, Resource } from '../cli/types';
+import type { ForwardConfig, Job, Me, Resource } from '../cli/types';
+import { ForwardStore, normalizeForwards } from '../forward/ForwardStore';
 import { Session } from './Session';
 import { settings } from '../util/config';
 
@@ -32,7 +33,7 @@ export class SessionManager implements vscode.Disposable {
   private warned = new Set<string>();
   private refreshing?: Promise<void>;
 
-  constructor(private readonly cli: ThubCli, private readonly log: (line: string) => void){
+  constructor(private readonly cli: ThubCli, private readonly log: (line: string) => void, private readonly forwardStore: ForwardStore){
     // The countdown, the 10-minute warning and the end check run every 15 s.
     this.ticker = setInterval(() => this.tick(), POLL_MS);
   }
@@ -175,21 +176,44 @@ export class SessionManager implements vscode.Disposable {
     await this.refresh();
   }
 
+  get forwardServices(): ForwardConfig[] {
+    return this.mine ? this.forwardStore.read(this.mine.id) : [];
+  }
+
+  async setForwardServices(forwards: unknown): Promise<void> {
+    const mine = this.mine;
+    if (!mine){
+      throw new Error('Reserve a board before adding forwarded services');
+    }
+    const checked = normalizeForwards(forwards);
+    await this.forwardStore.write(mine.id, checked);
+    const reservationId = mine.reservation?.id;
+    if (reservationId && this.session?.reservationId === reservationId){
+      this.session.updateForwards(checked);
+    }
+    this.changed.fire();
+  }
+
   /** The session of my reservation — started if it isn't yet. */
   async connect(target?: string): Promise<Session> {
     const mine = this.mine;
     if (!mine?.reservation?.id){
       throw new Error('Reserve a board first');
     }
-    if (this.session && this.session.reservationId === mine.reservation.id){
+    const reservationId = mine.reservation.id;
+    if (this.session && this.session.reservationId === reservationId){
       return this.session;
     }
+    const forwards = this.forwardStore.read(mine.id);
+    if (forwards.length && !(await this.cli.getFeatures()).connectForward){
+      throw new Error('Your saved forwarded services need a newer thub CLI with `connect --forward`; update @andrian.yablonskyy/thub-agent.');
+    }
     this.session?.end('Replaced');
-    const id = mine.reservation.id,
+    const id = reservationId,
       session = new Session(this.cli, this.log, mine, target || settings.defaultTarget() || undefined, async () => {
         await this.refresh();
         return this.mine?.reservation?.id === id;
-      });
+      }, forwards);
     this.session = session;
     void vscode.commands.executeCommand('setContext', 'thub.hasSession', true);
     session.onDidChange(() => {

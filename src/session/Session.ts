@@ -7,7 +7,7 @@ import * as readline from 'node:readline';
 import type { ChildProcess } from 'node:child_process';
 import type { ThubCli } from '../cli/ThubCli';
 import { parseConnectLine } from '../cli/parse';
-import type { ConnectReady, Resource } from '../cli/types';
+import type { ConnectReady, ForwardConfig, Resource } from '../cli/types';
 import { freeBlock } from '../util/ports';
 import { settings } from '../util/config';
 
@@ -32,6 +32,8 @@ export class Session implements vscode.Disposable {
   private restartTimer?: NodeJS.Timeout;
   private disposed = false;
   private wasUp = false;
+  private restartForwards = false;
+  private forwardsVersion = 0;
   private fatal?: string;
   private readonly owned: vscode.Disposable[] = [];
   private readonly changed = new vscode.EventEmitter<void>();
@@ -50,7 +52,8 @@ export class Session implements vscode.Disposable {
     resource: Resource,
     readonly target: string | undefined,
     /** Whether the reservation `reservationId` still holds (for restarts). */
-    private readonly stillReserved: () => Promise<boolean>
+    private readonly stillReserved: () => Promise<boolean>,
+    private forwards: ForwardConfig[] = []
   ){
     this.client = resource.name;
     this.reservationId = resource.reservation?.id || '';
@@ -96,6 +99,21 @@ export class Session implements vscode.Disposable {
     await this.spawn();
   }
 
+  updateForwards(forwards: ForwardConfig[]): void {
+    this.forwards = forwards;
+    this.forwardsVersion++;
+    this.ready = undefined;
+    if (this.child){
+      this.restartForwards = true;
+      this.link = 'reconnecting';
+      this.changed.fire();
+      this.child.kill('SIGINT');
+    }
+    else {
+      this.changed.fire();
+    }
+  }
+
   /** Resolves once the link is up (or rejects when the session ends first). */
   whenUp(timeoutMs = 60_000): Promise<void> {
     if (this.isUp){
@@ -122,9 +140,10 @@ export class Session implements vscode.Disposable {
     this.fatal = undefined;
     this.link = this.wasUp ? 'reconnecting' : 'starting';
     this.changed.fire();
+    const forwardsVersion = this.forwardsVersion;
     let child: ChildProcess;
     try {
-      child = await this.cli.startConnect(this.client, this.ports, this.target);
+      child = await this.cli.startConnect(this.client, this.ports, this.target, this.forwards);
     }
     catch (err){
       this.lastError = (err as Error).message;
@@ -142,6 +161,10 @@ export class Session implements vscode.Disposable {
       this.lastError = err.message;
     });
     child.on('exit', (code) => this.onExit(child, code));
+    if (forwardsVersion !== this.forwardsVersion){
+      this.restartForwards = true;
+      child.kill('SIGINT');
+    }
   }
 
   private onLine(line: string): void {
@@ -206,6 +229,11 @@ export class Session implements vscode.Disposable {
     this.log(`thub connect ${this.client} exited (${code})${fatal ? `: ${fatal}` : ''}`);
     if (/reservation (has )?ended|isn't reserved|reserved by/i.test(fatal || '') || !(await this.stillReserved())){
       return this.end(fatal && /ended/i.test(fatal) ? 'Reservation ended' : fatal || 'Reservation ended');
+    }
+    if (this.restartForwards){
+      this.restartForwards = false;
+      this.lastError = undefined;
+      return this.spawn();
     }
     this.lastError = fatal;
     this.scheduleRestart();

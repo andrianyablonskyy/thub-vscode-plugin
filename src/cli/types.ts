@@ -54,6 +54,18 @@ export interface ConnectPort {
   target?: string | null;
 }
 
+/** A saved mapping to a loopback service on the Client host. */
+export interface ForwardConfig {
+  name: string;
+  clientPort: number;
+}
+
+/** `thub connect --json`: a forwarded Client service's local listener. */
+export interface ConnectForward extends ForwardConfig {
+  host: string;
+  port: number;
+}
+
 /** `thub connect --json`: the first line, once the board's Client is linked. */
 export interface ConnectReady {
   event?: 'ready';
@@ -61,6 +73,7 @@ export interface ConnectReady {
   link: string;
   until: string | null;
   ports: ConnectPort[];
+  forwards?: ConnectForward[];
   video: { camera: string; url: string; udp: string | null } | null;
 }
 

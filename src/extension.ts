@@ -13,7 +13,9 @@ import { FlashAfterBuild } from './flash/FlashAfterBuild';
 import { FlashSettingsPanel } from './flash/FlashSettingsPanel';
 import { VideoPanel } from './video/VideoPanel';
 import { Power } from './power/Power';
-import { forwardPort } from './forward/Forwards';
+import { addForward, editForward, removeForward } from './forward/Forwards';
+import { ForwardStore } from './forward/ForwardStore';
+import { ServicePanel } from './forward/ServicePanel';
 import { reserveFlow } from './reserve/reserveFlow';
 import { Log } from './util/log';
 import { mainFolder, settings } from './util/config';
@@ -24,6 +26,7 @@ const KEY_SECRET = 'thub.key',
 
 export function activate(context: vscode.ExtensionContext): void {
   const log = new Log(),
+    forwardStore = new ForwardStore(context.globalState),
     cli = new ThubCli({
       cliPath: settings.cliPath,
       url: settings.url,
@@ -34,7 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
       },
       log: log.line
     }),
-    mgr = new SessionManager(cli, log.line),
+    mgr = new SessionManager(cli, log.line, forwardStore),
     power = new Power(cli, mgr),
     serial = new SerialTerminals(),
     flasher = new Flasher(mgr, context.workspaceState, log),
@@ -179,7 +182,71 @@ export function activate(context: vscode.ExtensionContext): void {
   command('thub.powerCycle', () => power.run('reset', { delaySec: 2 }));
   command('thub.powerOn', () => power.run('on'));
   command('thub.powerOff', () => power.run('off'));
-  command('thub.forwardPort', () => forwardPort(() => cli.getFeatures()));
+  const requireForwardFeature = async () => {
+    if (!(await cli.getFeatures()).connectForward){
+      throw new Error('Forwarded services need a newer thub CLI with `connect --forward`; update @andrian.yablonskyy/thub-agent.');
+    }
+  };
+  command('thub.addForward', async () => {
+    await requireForwardFeature();
+    await addForward(mgr);
+  });
+  const selectedForwardName = (value: unknown): string | undefined => {
+    if (typeof value === 'string'){
+      return value;
+    }
+    if (value && typeof value === 'object' && 'service' in value){
+      const service = value.service;
+      if (service && typeof service === 'object' && 'name' in service && typeof service.name === 'string'){
+        return service.name;
+      }
+    }
+    if (value && typeof value === 'object' && 'label' in value && typeof value.label === 'string'){
+      return value.label;
+    }
+    return undefined;
+  };
+  command('thub.updateForward', async (value?: unknown) => {
+    await requireForwardFeature();
+    const name = selectedForwardName(value);
+    if (typeof name !== 'string'){
+      throw new Error('Select a forwarded service to update');
+    }
+    await editForward(mgr, name);
+  });
+  command('thub.removeForward', async (value?: unknown) => {
+    const name = selectedForwardName(value);
+    if (typeof name !== 'string'){
+      throw new Error('Select a forwarded service to remove');
+    }
+    await removeForward(mgr, name);
+  });
+  command('thub.forwardPort', async () => {
+    await requireForwardFeature();
+    await addForward(mgr);
+  });
+  command('thub.openForward', async (value?: unknown) => {
+    const name = selectedForwardName(value);
+    if (typeof name !== 'string'){
+      throw new Error('Select a forwarded service to open');
+    }
+    const session = await mgr.ensureUp('The forwarded service'),
+      service = session.ready?.forwards?.find((f) => f.name === name);
+    if (!service){
+      throw new Error(`${name} is not available on ${session.client}`);
+    }
+    await ServicePanel.show(session, service);
+  });
+  command('thub.copyForward', async (value?: unknown) => {
+    const name = selectedForwardName(value),
+      service = mgr.session?.ready?.forwards?.find((f) => f.name === name);
+    if (!service){
+      throw new Error('Select an available forwarded service to copy');
+    }
+    const uri = await vscode.env.asExternalUri(vscode.Uri.parse(`http://127.0.0.1:${service.port}/`));
+    await vscode.env.clipboard.writeText(uri.toString());
+    void vscode.window.setStatusBarMessage(`thub: copied ${name}`, 3000);
+  });
   command('thub.copyEndpoint', async (node?: { address?: string }) => {
     if (node?.address){
       await vscode.env.clipboard.writeText(node.address);

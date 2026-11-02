@@ -97,6 +97,11 @@
       { "command": "thub.powerOn", "title": "Power on", "category": "thub" },
       { "command": "thub.powerOff", "title": "Power off", "category": "thub" },
       { "command": "thub.forwardPort", "title": "Forward a port…", "category": "thub", "icon": "$(arrow-right)" },
+      { "command": "thub.addForward", "title": "Add forwarded service…", "category": "thub", "icon": "$(add)" },
+      { "command": "thub.updateForward", "title": "Update forwarded service…", "category": "thub" },
+      { "command": "thub.removeForward", "title": "Remove forwarded service", "category": "thub" },
+      { "command": "thub.openForward", "title": "Open forwarded service", "category": "thub", "icon": "$(globe)" },
+      { "command": "thub.copyForward", "title": "Copy forwarded service URL", "category": "thub", "icon": "$(copy)" },
       { "command": "thub.copyEndpoint", "title": "Copy address", "category": "thub", "icon": "$(copy)" },
       { "command": "thub.showLog", "title": "Show log", "category": "thub", "icon": "$(output)" }
     ],
@@ -111,11 +116,14 @@
         { "command": "thub.release", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "inline@9" },
         { "command": "thub.extend", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "1_session@1" },
         { "command": "thub.release", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "1_session@2" },
-        { "command": "thub.copyEndpoint", "when": "view == thub.boards && viewItem =~ /^endpoint/", "group": "inline" },
+        { "command": "thub.copyEndpoint", "when": "view == thub.boards && viewItem =~ /^endpoint\\.(uart|gdb|video)$/", "group": "inline" },
         { "command": "thub.openSerial", "when": "view == thub.boards && viewItem == endpoint.uart", "group": "inline" },
         { "command": "thub.debug", "when": "view == thub.boards && viewItem == endpoint.gdb", "group": "inline" },
         { "command": "thub.flash", "when": "view == thub.boards && viewItem == endpoint.gdb", "group": "inline" },
-        { "command": "thub.openVideo", "when": "view == thub.boards && viewItem == endpoint.video", "group": "inline" }
+        { "command": "thub.openVideo", "when": "view == thub.boards && viewItem == endpoint.video", "group": "inline" },
+        { "command": "thub.updateForward", "when": "view == thub.boards && viewItem == endpoint.forward", "group": "inline@1" },
+        { "command": "thub.removeForward", "when": "view == thub.boards && viewItem == endpoint.forward", "group": "inline@2" },
+        { "command": "thub.copyForward", "when": "view == thub.boards && viewItem == endpoint.forward", "group": "inline@3" }
       ],
       "debug/toolbar": [
         { "command": "thub.powerCycle", "when": "thub.debugging", "group": "navigation@99" }

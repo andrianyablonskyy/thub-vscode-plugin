@@ -4,7 +4,7 @@
 import * as vscode from 'vscode';
 import type { SessionManager } from '../session/SessionManager';
 import { boardModel, boardState, formatLeft, labelsSummary, msUntil } from '../cli/parse';
-import type { BoardState, Job, Resource } from '../cli/types';
+import type { BoardState, ConnectForward, Job, Resource } from '../cli/types';
 import { linkText } from './PortsView';
 import { settings } from '../util/config';
 
@@ -17,6 +17,7 @@ type Node =
   | { kind: 'section'; id: 'session' | 'boards' | 'jobs' }
   | { kind: 'sessionHeader'; board: Resource }
   | { kind: 'endpoint'; label: string; address: string; context: string; command?: vscode.Command }
+  | { kind: 'forward'; service: ConnectForward }
   | { kind: 'action'; label: string; icon: string; command: vscode.Command; primary?: boolean }
   | { kind: 'board'; board: Resource }
   | { kind: 'job'; job: Job }
@@ -73,6 +74,9 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       if (s.ready.video){
         nodes.push({ kind: 'endpoint', label: 'Video', address: s.ready.video.url.replace(/^http:\/\//, ''), context: 'endpoint.video', command: { command: 'thub.openVideo', title: 'Open camera' } });
       }
+      for (const service of s.ready.forwards || []){
+        nodes.push({ kind: 'forward', service });
+      }
       nodes.push(
         { kind: 'action', label: 'Flash', icon: 'arrow-up', command: { command: 'thub.flash', title: 'Flash' }, primary: true },
         { kind: 'action', label: 'Debug', icon: 'debug-alt', command: { command: 'thub.debug', title: 'Debug' } }
@@ -81,6 +85,7 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
     else if (!s){
       nodes.push({ kind: 'action', label: 'Connect (UART, GDB, camera)', icon: 'plug', command: { command: 'thub.connect', title: 'Connect' }, primary: true });
     }
+    nodes.push({ kind: 'action', label: 'Add forwarded service…', icon: 'add', command: { command: 'thub.addForward', title: 'Add forwarded service' } });
     nodes.push({ kind: 'action', label: 'Release board', icon: 'unlock', command: { command: 'thub.release', title: 'Release' } });
     return nodes;
   }
@@ -119,6 +124,16 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
         item.iconPath = new vscode.ThemeIcon(node.context === 'endpoint.uart' ? 'terminal' : node.context === 'endpoint.gdb' ? 'debug' : 'device-camera-video');
         item.tooltip = `${node.label} — ${node.address}`;
         item.command = node.command;
+        return item;
+      }
+      case 'forward': {
+        const { service } = node,
+          item = new vscode.TreeItem(service.name);
+        item.description = `localhost:${service.clientPort} → 127.0.0.1:${service.port}`;
+        item.contextValue = 'endpoint.forward';
+        item.iconPath = new vscode.ThemeIcon('globe');
+        item.tooltip = `${service.name} on the Client's localhost:${service.clientPort}`;
+        item.command = { command: 'thub.openForward', title: 'Open forwarded service', arguments: [service.name] };
         return item;
       }
       case 'action': {
