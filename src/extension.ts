@@ -2,6 +2,7 @@
 
 import * as vscode from 'vscode';
 import { ThubCli, ThubError } from './cli/ThubCli';
+import { AgentRuntime } from './cli/AgentRuntime';
 import { SessionManager } from './session/SessionManager';
 import { BoardsTree } from './views/BoardsTree';
 import { PortsView } from './views/PortsView';
@@ -24,15 +25,18 @@ import { Log } from './util/log';
 import { mainFolder, settings } from './util/config';
 import { formatLeft, msUntil } from './cli/parse';
 
-const KEY_SECRET = 'thub.key',
-  AGENT_PACKAGE = '@andrian.yablonskyy/thub-agent';
+const KEY_SECRET = 'thub.key';
 
 export function activate(context: vscode.ExtensionContext): void {
   const log = new Log(),
     forwardStore = new ForwardStore(context.globalState),
     rttStore = new RttStore(context.globalState),
+    agentRuntime = new AgentRuntime({
+      globalStoragePath: context.globalStorageUri.fsPath,
+      cliPath: settings.cliPath
+    }),
     cli = new ThubCli({
-      cliPath: settings.cliPath,
+      cliPath: () => agentRuntime.cliPath,
       url: settings.url,
       key: async () => {
         const key = await context.secrets.get(KEY_SECRET);
@@ -73,6 +77,12 @@ export function activate(context: vscode.ExtensionContext): void {
   const command = (id: string, fn: (...args: never[]) => unknown) => context.subscriptions.push(
     vscode.commands.registerCommand(id, async (...args: never[]) => {
       try {
+        if (id !== 'thub.showLog' && id !== 'thub.signIn'){
+          await agentReady;
+          if (agentError){
+            throw agentError;
+          }
+        }
         return await fn(...args);
       }
       catch (err){
@@ -179,7 +189,7 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   const requireRttFeature = async () => {
     if (!(await cli.getFeatures()).connectRtt){
-      throw new Error('RTT logs need a newer thub CLI with `connect --rtt`; update @andrian.yablonskyy/thub-agent.');
+      throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
   };
   command('thub.addRtt', async () => {
@@ -215,7 +225,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command('thub.powerOff', () => power.run('off'));
   const requireForwardFeature = async () => {
     if (!(await cli.getFeatures()).connectForward){
-      throw new Error('Forwarded services need a newer thub CLI with `connect --forward`; update @andrian.yablonskyy/thub-agent.');
+      throw new Error('The configured thub CLI does not support `connect --forward`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
   };
   command('thub.addForward', async () => {
@@ -289,41 +299,31 @@ export function activate(context: vscode.ExtensionContext): void {
     if (e.affectsConfiguration('thub.url') || e.affectsConfiguration('thub.cliPath')){
       cli.reset();
       mgr.forgetIdentity();
-      void mgr.refresh();
+      void start();
     }
   }));
 
-  void startup(cli, mgr, log);
+  let agentError: Error | undefined,
+    agentReady: Promise<void> = Promise.resolve();
+  void start();
+
+  function start(): Promise<void> {
+    agentError = undefined;
+    agentReady = startup(cli, mgr, log, agentRuntime).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      agentError = err instanceof Error ? err : new Error(message);
+      log.line(`Agent CLI initialization failed: ${message}`);
+      void vscode.commands.executeCommand('setContext', 'thub.signedIn', false);
+      void vscode.window.showErrorMessage(`thub: ${message}`);
+    });
+    return agentReady;
+  }
 }
 
 /** The thub CLI is there and new enough; then the first refresh. */
-async function startup(cli: ThubCli, mgr: SessionManager, log: Log): Promise<void> {
-  const version = await cli.version();
-  if (!version){
-    log.line(`thub CLI not found (${cli.command})`);
-    const pick = await vscode.window.showWarningMessage(
-      'thub: the thub CLI (the TestHub Agent) isn\'t installed — the extension runs it for everything.', 'Install it', 'Set its path');
-    if (pick === 'Install it'){
-      const term = vscode.window.createTerminal('thub: install');
-      term.show();
-      term.sendText(`npm i -g ${AGENT_PACKAGE}`);
-    }
-    else if (pick === 'Set its path'){
-      await vscode.commands.executeCommand('workbench.action.openSettings', 'thub.cliPath');
-    }
-    void vscode.commands.executeCommand('setContext', 'thub.signedIn', false);
-    return;
-  }
-  log.line(`thub CLI ${version}`);
-  const f = await cli.getFeatures();
-  if (!f.reserve){
-    const pick = await vscode.window.showWarningMessage(`thub: this thub CLI (${version}) has no reservations — update it.`, 'Update');
-    if (pick){
-      const term = vscode.window.createTerminal('thub: update');
-      term.show();
-      term.sendText(`npm i -g ${AGENT_PACKAGE}@latest`);
-    }
-  }
+async function startup(cli: ThubCli, mgr: SessionManager, log: Log, agentRuntime: AgentRuntime): Promise<void> {
+  const version = await agentRuntime.ensure(cli);
+  log.line(`thub CLI ${version} (${cli.command})`);
   await mgr.refresh();
 }
 

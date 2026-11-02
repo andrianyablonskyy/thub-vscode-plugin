@@ -211,7 +211,7 @@ export class SessionManager implements vscode.Disposable {
     }
     const checked = normalizeRtts(configs);
     if (checked.length && !(await this.cli.getFeatures()).connectRtt){
-      throw new Error('RTT logs need a newer thub CLI with `connect --rtt`; update @andrian.yablonskyy/thub-agent.');
+      throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
     await this.rttStore.write(mine.id, checked);
     const reservationId = mine.reservation?.id;
@@ -233,11 +233,11 @@ export class SessionManager implements vscode.Disposable {
     }
     const forwards = this.forwardStore.read(mine.id);
     if (forwards.length && !(await this.cli.getFeatures()).connectForward){
-      throw new Error('Your saved forwarded services need a newer thub CLI with `connect --forward`; update @andrian.yablonskyy/thub-agent.');
+      throw new Error('The configured thub CLI does not support `connect --forward`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
     const rtts = this.rttStore.read(mine.id);
     if (rtts.length && !(await this.cli.getFeatures()).connectRtt){
-      throw new Error('Your saved RTT setup needs a newer thub CLI with `connect --rtt`; update @andrian.yablonskyy/thub-agent.');
+      throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
     this.session?.end('Replaced');
     const id = reservationId,

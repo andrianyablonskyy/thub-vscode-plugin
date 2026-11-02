@@ -121,7 +121,7 @@ export class ThubCli {
       child.on('error', (err: NodeJS.ErrnoException) => {
         clearTimeout(timer);
         reject(err.code === 'ENOENT'
-          ? new ThubError(null, 'unknown', `The thub CLI isn't installed (${this.command} not found): npm i -g @andrian.yablonskyy/thub-agent`)
+          ? new ThubError(null, 'unknown', `The thub Agent CLI isn't available (${this.command} not found). Clear thub.cliPath to let the extension install it, or set thub.cliPath to an installed CLI.`)
           : err);
       });
       child.on('close', (code) => {

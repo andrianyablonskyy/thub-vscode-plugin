@@ -182,7 +182,7 @@ window.addEventListener('message', ({ data }) => {
   $('#addForward')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.addForward' }));
   $('#rtt').innerHTML = data.canRtt && data.hasSession
     ? '<button id="addRtt">Add RTT reader…</button>'
-    : data.hasSession ? 'RTT logs need a newer thub CLI with connect --rtt.' : '';
+    : data.hasSession ? 'RTT is unavailable in the configured Agent CLI. Clear thub.cliPath to use the extension-managed CLI.' : '';
   $('#addRtt')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.addRtt' }));
 });
 vscode.postMessage({ type: 'ready' });

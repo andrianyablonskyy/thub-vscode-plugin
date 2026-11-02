@@ -1,7 +1,7 @@
 {
   "name": "thub-vscode",
   "displayName": "thub — remote boards",
-  "description": "Reserve a board in your TestHub lab, flash and debug it over SWD, use its serial ports and watch its camera — without leaving the editor.",
+  "description": "Reserve a board in your TestHub lab, flash and debug it over SWD, use serial ports, RTT logs and forwarded services — without leaving the editor.",
   "version": "0.1.1",
   "publisher": "adsystem-pro",
   "license": "SEE LICENSE IN LICENSE.md",
@@ -374,7 +374,7 @@
         "thub.cliPath": {
           "type": "string",
           "default": "",
-          "description": "The thub CLI (the Agent). Empty: thub on PATH."
+          "description": "Optional override for the thub Agent CLI. Empty: install and use the extension-managed CLI."
         },
         "thub.gdbPath": {
           "type": "string",

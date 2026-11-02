@@ -24,10 +24,12 @@ The extension is a thin UI over the Agent CLI
 Never call the Coordinator HTTP API directly unless the CLI has no equivalent,
 and then put it behind the same `ThubCli` interface so it can be swapped out.
 
-### Spawning `thub`
+### Spawning the Agent CLI
 
-- Resolve the binary from `thub.cliPath`, else `PATH`. On activation run
-  `thub --version`; if missing, offer `npm i -g @andrian.yablonskyy/thub-agent`.
+- Resolve the binary from `thub.cliPath`, else the extension-managed install
+  under VS Code global storage. On activation, install or update
+  `@andrian.yablonskyy/thub-agent` there with Node.js 24+ and npm when missing
+  or when required features are absent. `thub.cliPath` is an explicit override.
 - Credentials: URL from `thub.url`; the access key is stored **only** in
   `context.secrets` (`thub.key`), never in settings. Pass both as `THUB_URL` /
   `THUB_KEY` in the child's env.

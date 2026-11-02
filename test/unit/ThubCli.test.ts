@@ -78,7 +78,7 @@ suite('ThubCli', () => {
 
   test('no thub on PATH: says how to install it', async () => {
     const { cli } = make(() => 'ENOENT');
-    await assert.rejects(cli.resources(), /npm i -g @andrian.yablonskyy\/thub-agent/);
+    await assert.rejects(cli.resources(), /Clear thub\.cliPath to let the extension install it/);
     assert.equal(await cli.version(), null);
   });
 
