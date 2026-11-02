@@ -2,7 +2,7 @@
   "name": "thub-vscode",
   "displayName": "thub — remote boards",
   "description": "Reserve a board in your TestHub lab, flash and debug it over SWD, use serial ports, RTT logs and forwarded services — without leaving the editor.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "adsystem-pro",
   "license": "SEE LICENSE IN LICENSE.md",
   "author": "Andrian Yablonskyy <andrian.yablonskyy@gmail.com>",
