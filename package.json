@@ -2,7 +2,7 @@
   "name": "thub-vscode",
   "displayName": "thub — remote boards",
   "description": "Reserve a board in your TestHub lab, flash and debug it over SWD, use its serial ports and watch its camera — without leaving the editor.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "adsystem-pro",
   "license": "SEE LICENSE IN LICENSE.md",
   "author": "Andrian Yablonskyy <andrian.yablonskyy@gmail.com>",
@@ -78,66 +78,289 @@
       }
     ],
     "commands": [
-      { "command": "thub.signIn", "title": "Sign in", "category": "thub", "icon": "$(account)" },
-      { "command": "thub.signOut", "title": "Sign out", "category": "thub" },
-      { "command": "thub.refresh", "title": "Refresh boards", "category": "thub", "icon": "$(refresh)" },
-      { "command": "thub.reserve", "title": "Reserve board…", "category": "thub", "icon": "$(lock)" },
-      { "command": "thub.extend", "title": "Extend reservation 1h", "category": "thub", "icon": "$(history)" },
-      { "command": "thub.release", "title": "Release board", "category": "thub", "icon": "$(unlock)" },
-      { "command": "thub.connect", "title": "Connect to reserved board", "category": "thub", "icon": "$(plug)" },
-      { "command": "thub.flash", "title": "Flash", "category": "thub", "icon": "$(arrow-up)" },
-      { "command": "thub.buildAndFlash", "title": "Build and flash", "category": "thub", "icon": "$(rocket)" },
-      { "command": "thub.configureFlashAfterBuild", "title": "Flash after build…", "category": "thub", "icon": "$(gear)" },
-      { "command": "thub.toggleFlashAfterBuild", "title": "Toggle flash after build", "category": "thub" },
-      { "command": "thub.debug", "title": "Debug on reserved board", "category": "thub", "icon": "$(debug-alt)" },
-      { "command": "thub.reattachDebugger", "title": "Reattach debugger", "category": "thub" },
-      { "command": "thub.openSerial", "title": "Open serial terminal", "category": "thub", "icon": "$(terminal)" },
-      { "command": "thub.addRtt", "title": "Add RTT reader…", "category": "thub", "icon": "$(add)" },
-      { "command": "thub.configureRtt", "title": "Configure RTT reader…", "category": "thub" },
-      { "command": "thub.openRtt", "title": "Open RTT logs", "category": "thub", "icon": "$(terminal)" },
-      { "command": "thub.removeRtt", "title": "Remove RTT reader", "category": "thub" },
-      { "command": "thub.openVideo", "title": "Open camera", "category": "thub", "icon": "$(device-camera-video)" },
-      { "command": "thub.powerCycle", "title": "Power-cycle board", "category": "thub", "icon": "$(debug-restart)" },
-      { "command": "thub.powerOn", "title": "Power on", "category": "thub" },
-      { "command": "thub.powerOff", "title": "Power off", "category": "thub" },
-      { "command": "thub.forwardPort", "title": "Forward a port…", "category": "thub", "icon": "$(arrow-right)" },
-      { "command": "thub.addForward", "title": "Add forwarded service…", "category": "thub", "icon": "$(add)" },
-      { "command": "thub.updateForward", "title": "Update forwarded service…", "category": "thub" },
-      { "command": "thub.removeForward", "title": "Remove forwarded service", "category": "thub" },
-      { "command": "thub.openForward", "title": "Open forwarded service", "category": "thub", "icon": "$(globe)" },
-      { "command": "thub.copyForward", "title": "Copy forwarded service URL", "category": "thub", "icon": "$(copy)" },
-      { "command": "thub.copyEndpoint", "title": "Copy address", "category": "thub", "icon": "$(copy)" },
-      { "command": "thub.showLog", "title": "Show log", "category": "thub", "icon": "$(output)" }
+      {
+        "command": "thub.signIn",
+        "title": "Sign in",
+        "category": "thub",
+        "icon": "$(account)"
+      },
+      {
+        "command": "thub.signOut",
+        "title": "Sign out",
+        "category": "thub"
+      },
+      {
+        "command": "thub.refresh",
+        "title": "Refresh boards",
+        "category": "thub",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "thub.reserve",
+        "title": "Reserve board…",
+        "category": "thub",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "thub.extend",
+        "title": "Extend reservation 1h",
+        "category": "thub",
+        "icon": "$(history)"
+      },
+      {
+        "command": "thub.release",
+        "title": "Release board",
+        "category": "thub",
+        "icon": "$(unlock)"
+      },
+      {
+        "command": "thub.connect",
+        "title": "Connect to reserved board",
+        "category": "thub",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "thub.flash",
+        "title": "Flash",
+        "category": "thub",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "thub.buildAndFlash",
+        "title": "Build and flash",
+        "category": "thub",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "thub.configureFlashAfterBuild",
+        "title": "Flash after build…",
+        "category": "thub",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "thub.toggleFlashAfterBuild",
+        "title": "Toggle flash after build",
+        "category": "thub"
+      },
+      {
+        "command": "thub.debug",
+        "title": "Debug on reserved board",
+        "category": "thub",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "thub.reattachDebugger",
+        "title": "Reattach debugger",
+        "category": "thub"
+      },
+      {
+        "command": "thub.openSerial",
+        "title": "Open serial terminal",
+        "category": "thub",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "thub.addRtt",
+        "title": "Add RTT reader…",
+        "category": "thub",
+        "icon": "$(add)"
+      },
+      {
+        "command": "thub.configureRtt",
+        "title": "Configure RTT reader…",
+        "category": "thub"
+      },
+      {
+        "command": "thub.openRtt",
+        "title": "Open RTT logs",
+        "category": "thub",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "thub.removeRtt",
+        "title": "Remove RTT reader",
+        "category": "thub"
+      },
+      {
+        "command": "thub.openVideo",
+        "title": "Open camera",
+        "category": "thub",
+        "icon": "$(device-camera-video)"
+      },
+      {
+        "command": "thub.powerCycle",
+        "title": "Power-cycle board",
+        "category": "thub",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "thub.powerOn",
+        "title": "Power on",
+        "category": "thub"
+      },
+      {
+        "command": "thub.powerOff",
+        "title": "Power off",
+        "category": "thub"
+      },
+      {
+        "command": "thub.forwardPort",
+        "title": "Forward a port…",
+        "category": "thub",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "thub.addForward",
+        "title": "Add forwarded service…",
+        "category": "thub",
+        "icon": "$(add)"
+      },
+      {
+        "command": "thub.updateForward",
+        "title": "Update forwarded service…",
+        "category": "thub"
+      },
+      {
+        "command": "thub.removeForward",
+        "title": "Remove forwarded service",
+        "category": "thub"
+      },
+      {
+        "command": "thub.openForward",
+        "title": "Open forwarded service",
+        "category": "thub",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "thub.copyForward",
+        "title": "Copy forwarded service URL",
+        "category": "thub",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "thub.copyEndpoint",
+        "title": "Copy address",
+        "category": "thub",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "thub.showLog",
+        "title": "Show log",
+        "category": "thub",
+        "icon": "$(output)"
+      }
     ],
     "menus": {
       "view/title": [
-        { "command": "thub.reserve", "when": "view == thub.boards && thub.signedIn && !thub.hasSession", "group": "navigation@1" },
-        { "command": "thub.refresh", "when": "view == thub.boards", "group": "navigation@2" }
+        {
+          "command": "thub.reserve",
+          "when": "view == thub.boards && thub.signedIn && !thub.hasSession",
+          "group": "navigation@1"
+        },
+        {
+          "command": "thub.refresh",
+          "when": "view == thub.boards",
+          "group": "navigation@2"
+        }
       ],
       "view/item/context": [
-        { "command": "thub.reserve", "when": "view == thub.boards && viewItem == board.idle", "group": "inline" },
-        { "command": "thub.connect", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/ && !thub.connected", "group": "inline@1" },
-        { "command": "thub.release", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "inline@9" },
-        { "command": "thub.extend", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "1_session@1" },
-        { "command": "thub.release", "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/", "group": "1_session@2" },
-        { "command": "thub.copyEndpoint", "when": "view == thub.boards && viewItem =~ /^endpoint\\.(uart|gdb|rtt|video)$/", "group": "inline" },
-        { "command": "thub.openSerial", "when": "view == thub.boards && viewItem == endpoint.uart", "group": "inline" },
-        { "command": "thub.openRtt", "when": "view == thub.boards && viewItem == endpoint.rtt", "group": "inline" },
-        { "command": "thub.configureRtt", "when": "view == thub.boards && viewItem == endpoint.rtt", "group": "inline@1" },
-        { "command": "thub.removeRtt", "when": "view == thub.boards && viewItem == endpoint.rtt", "group": "inline@2" },
-        { "command": "thub.debug", "when": "view == thub.boards && viewItem == endpoint.gdb", "group": "inline" },
-        { "command": "thub.flash", "when": "view == thub.boards && viewItem == endpoint.gdb", "group": "inline" },
-        { "command": "thub.openVideo", "when": "view == thub.boards && viewItem == endpoint.video", "group": "inline" },
-        { "command": "thub.updateForward", "when": "view == thub.boards && viewItem == endpoint.forward", "group": "inline@1" },
-        { "command": "thub.removeForward", "when": "view == thub.boards && viewItem == endpoint.forward", "group": "inline@2" },
-        { "command": "thub.copyForward", "when": "view == thub.boards && viewItem == endpoint.forward", "group": "inline@3" }
+        {
+          "command": "thub.reserve",
+          "when": "view == thub.boards && viewItem == board.idle",
+          "group": "inline"
+        },
+        {
+          "command": "thub.connect",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/ && !thub.connected",
+          "group": "inline@1"
+        },
+        {
+          "command": "thub.release",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/",
+          "group": "inline@9"
+        },
+        {
+          "command": "thub.extend",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/",
+          "group": "1_session@1"
+        },
+        {
+          "command": "thub.release",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/",
+          "group": "1_session@2"
+        },
+        {
+          "command": "thub.copyEndpoint",
+          "when": "view == thub.boards && viewItem =~ /^endpoint\\.(uart|gdb|rtt|video)$/",
+          "group": "inline"
+        },
+        {
+          "command": "thub.openSerial",
+          "when": "view == thub.boards && viewItem == endpoint.uart",
+          "group": "inline"
+        },
+        {
+          "command": "thub.openRtt",
+          "when": "view == thub.boards && viewItem == endpoint.rtt",
+          "group": "inline"
+        },
+        {
+          "command": "thub.configureRtt",
+          "when": "view == thub.boards && viewItem == endpoint.rtt",
+          "group": "inline@1"
+        },
+        {
+          "command": "thub.removeRtt",
+          "when": "view == thub.boards && viewItem == endpoint.rtt",
+          "group": "inline@2"
+        },
+        {
+          "command": "thub.debug",
+          "when": "view == thub.boards && viewItem == endpoint.gdb",
+          "group": "inline"
+        },
+        {
+          "command": "thub.flash",
+          "when": "view == thub.boards && viewItem == endpoint.gdb",
+          "group": "inline"
+        },
+        {
+          "command": "thub.openVideo",
+          "when": "view == thub.boards && viewItem == endpoint.video",
+          "group": "inline"
+        },
+        {
+          "command": "thub.updateForward",
+          "when": "view == thub.boards && viewItem == endpoint.forward",
+          "group": "inline@1"
+        },
+        {
+          "command": "thub.removeForward",
+          "when": "view == thub.boards && viewItem == endpoint.forward",
+          "group": "inline@2"
+        },
+        {
+          "command": "thub.copyForward",
+          "when": "view == thub.boards && viewItem == endpoint.forward",
+          "group": "inline@3"
+        }
       ],
       "debug/toolbar": [
-        { "command": "thub.powerCycle", "when": "thub.debugging", "group": "navigation@99" }
+        {
+          "command": "thub.powerCycle",
+          "when": "thub.debugging",
+          "group": "navigation@99"
+        }
       ],
       "commandPalette": [
-        { "command": "thub.copyEndpoint", "when": "false" },
-        { "command": "thub.reattachDebugger", "when": "thub.connected" }
+        {
+          "command": "thub.copyEndpoint",
+          "when": "false"
+        },
+        {
+          "command": "thub.reattachDebugger",
+          "when": "thub.connected"
+        }
       ]
     },
     "configuration": {
@@ -169,12 +392,28 @@
           "pattern": "^\\d+[mhd]?$",
           "description": "The reservation length preselected in Reserve board (30m, 2h, …)."
         },
-        "thub.ports.uart": { "type": "number", "default": 5001, "description": "Local port of UART 1 (UART n: this + n − 1); the next free one if taken." },
-        "thub.ports.gdb": { "type": "number", "default": 3333, "description": "Local GDB port of ST-Link 1; the next free one if taken." },
-        "thub.ports.video": { "type": "number", "default": 8090, "description": "Local port of the camera stream; the next free one if taken." },
+        "thub.ports.uart": {
+          "type": "number",
+          "default": 5001,
+          "description": "Local port of UART 1 (UART n: this + n − 1); the next free one if taken."
+        },
+        "thub.ports.gdb": {
+          "type": "number",
+          "default": 3333,
+          "description": "Local GDB port of ST-Link 1; the next free one if taken."
+        },
+        "thub.ports.video": {
+          "type": "number",
+          "default": 8090,
+          "description": "Local port of the camera stream; the next free one if taken."
+        },
         "thub.video.mode": {
           "type": "string",
-          "enum": ["editor", "player", "browser"],
+          "enum": [
+            "editor",
+            "player",
+            "browser"
+          ],
           "enumDescriptions": [
             "In an editor tab: a local ffmpeg turns the stream into JPEG frames.",
             "In an external player (thub.video.player).",
@@ -226,36 +465,153 @@
             "openSerial": false
           },
           "properties": {
-            "enabled": { "type": "boolean", "default": false, "description": "Master switch." },
-            "buildTask": { "type": "string", "default": "", "description": "Task label to watch; empty = any task in the build group." },
-            "image": { "type": "string", "default": "${workspaceFolder}/build/${workspaceFolderBasename}.elf", "description": "ELF to flash. Supports ${workspaceFolder}, ${env:X}, ${config:x}, ${command:x}." },
-            "skipUnchanged": { "type": "boolean", "default": true, "description": "Skip if the image is identical to the last one flashed to this board." },
-            "board": { "type": "string", "default": "reserved", "description": "\"reserved\", a Client name, or \"label:<l>\"." },
-            "whenNoBoard": { "type": "string", "enum": ["ask", "reserve", "skip"], "default": "ask", "description": "No matching reservation: ask, reserve a matching idle board (1h), or do nothing." },
-            "target": { "type": "string", "default": "", "description": "OpenOCD target passed to thub connect --target; empty = the runner card's default." },
-            "powerCycle": { "type": "boolean", "default": false, "description": "Power-cycle before flashing (needs power support on the Coordinator)." },
-            "verify": { "type": "boolean", "default": true, "description": "Compare sections after load." },
-            "then": { "type": "string", "enum": ["run", "halt", "debug"], "default": "run", "description": "After load: reset and run, stay halted, or start a thub debug session." },
-            "openSerial": { "type": "boolean", "default": false, "description": "Focus and clear the UART 1 terminal after flashing." }
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Master switch."
+            },
+            "buildTask": {
+              "type": "string",
+              "default": "",
+              "description": "Task label to watch; empty = any task in the build group."
+            },
+            "image": {
+              "type": "string",
+              "default": "${workspaceFolder}/build/${workspaceFolderBasename}.elf",
+              "description": "ELF to flash. Supports ${workspaceFolder}, ${env:X}, ${config:x}, ${command:x}."
+            },
+            "skipUnchanged": {
+              "type": "boolean",
+              "default": true,
+              "description": "Skip if the image is identical to the last one flashed to this board."
+            },
+            "board": {
+              "type": "string",
+              "default": "reserved",
+              "description": "\"reserved\", a Client name, or \"label:<l>\"."
+            },
+            "whenNoBoard": {
+              "type": "string",
+              "enum": [
+                "ask",
+                "reserve",
+                "skip"
+              ],
+              "default": "ask",
+              "description": "No matching reservation: ask, reserve a matching idle board (1h), or do nothing."
+            },
+            "target": {
+              "type": "string",
+              "default": "",
+              "description": "OpenOCD target passed to thub connect --target; empty = the runner card's default."
+            },
+            "powerCycle": {
+              "type": "boolean",
+              "default": false,
+              "description": "Power-cycle before flashing (needs power support on the Coordinator)."
+            },
+            "verify": {
+              "type": "boolean",
+              "default": true,
+              "description": "Compare sections after load."
+            },
+            "then": {
+              "type": "string",
+              "enum": [
+                "run",
+                "halt",
+                "debug"
+              ],
+              "default": "run",
+              "description": "After load: reset and run, stay halted, or start a thub debug session."
+            },
+            "openSerial": {
+              "type": "boolean",
+              "default": false,
+              "description": "Focus and clear the UART 1 terminal after flashing."
+            }
           }
         }
       }
     },
     "colors": [
-      { "id": "thub.accent", "description": "thub: the one primary action per view, and what's yours.", "defaults": { "dark": "#FFAE2B", "light": "#B86E00", "highContrast": "#FFAE2B", "highContrastLight": "#8A5200" } },
-      { "id": "thub.onAccent", "description": "thub: text on the accent colour.", "defaults": { "dark": "#13110A", "light": "#13110A", "highContrast": "#000000", "highContrastLight": "#FFFFFF" } },
-      { "id": "thub.idle", "description": "thub: idle boards.", "defaults": { "dark": "#6EA8FE", "light": "#2F6FD6", "highContrast": "#6EA8FE", "highContrastLight": "#1F4FA0" } },
-      { "id": "thub.error", "description": "thub: failures, a reservation with under 10 minutes left.", "defaults": { "dark": "#F2665C", "light": "#C8372D", "highContrast": "#F2665C", "highContrastLight": "#A32A21" } },
-      { "id": "thub.ok", "description": "thub: link up, verified.", "defaults": { "dark": "#9ED9B0", "light": "#2E8A4E", "highContrast": "#9ED9B0", "highContrastLight": "#1F6B3A" } }
+      {
+        "id": "thub.accent",
+        "description": "thub: the one primary action per view, and what's yours.",
+        "defaults": {
+          "dark": "#FFAE2B",
+          "light": "#B86E00",
+          "highContrast": "#FFAE2B",
+          "highContrastLight": "#8A5200"
+        }
+      },
+      {
+        "id": "thub.onAccent",
+        "description": "thub: text on the accent colour.",
+        "defaults": {
+          "dark": "#13110A",
+          "light": "#13110A",
+          "highContrast": "#000000",
+          "highContrastLight": "#FFFFFF"
+        }
+      },
+      {
+        "id": "thub.idle",
+        "description": "thub: idle boards.",
+        "defaults": {
+          "dark": "#6EA8FE",
+          "light": "#2F6FD6",
+          "highContrast": "#6EA8FE",
+          "highContrastLight": "#1F4FA0"
+        }
+      },
+      {
+        "id": "thub.error",
+        "description": "thub: failures, a reservation with under 10 minutes left.",
+        "defaults": {
+          "dark": "#F2665C",
+          "light": "#C8372D",
+          "highContrast": "#F2665C",
+          "highContrastLight": "#A32A21"
+        }
+      },
+      {
+        "id": "thub.ok",
+        "description": "thub: link up, verified.",
+        "defaults": {
+          "dark": "#9ED9B0",
+          "light": "#2E8A4E",
+          "highContrast": "#9ED9B0",
+          "highContrastLight": "#1F6B3A"
+        }
+      }
     ],
     "taskDefinitions": [
       {
         "type": "thub",
-        "required": ["action"],
+        "required": [
+          "action"
+        ],
         "properties": {
-          "action": { "type": "string", "enum": ["flash"], "description": "flash: load the image onto the reserved board over its GDB port." },
-          "image": { "type": "string", "description": "ELF to flash (default: thub.flashAfterBuild.image)." },
-          "then": { "type": "string", "enum": ["run", "halt"], "description": "After load: reset and run, or stay halted." }
+          "action": {
+            "type": "string",
+            "enum": [
+              "flash"
+            ],
+            "description": "flash: load the image onto the reserved board over its GDB port."
+          },
+          "image": {
+            "type": "string",
+            "description": "ELF to flash (default: thub.flashAfterBuild.image)."
+          },
+          "then": {
+            "type": "string",
+            "enum": [
+              "run",
+              "halt"
+            ],
+            "description": "After load: reset and run, or stay halted."
+          }
         }
       }
     ],
@@ -265,22 +621,58 @@
         "label": "thub: Debug on reserved board",
         "configurationAttributes": {
           "launch": {
-            "required": ["executable"],
+            "required": [
+              "executable"
+            ],
             "properties": {
-              "executable": { "type": "string", "description": "The ELF to debug.", "default": "${workspaceFolder}/build/${workspaceFolderBasename}.elf" },
-              "flash": { "type": "boolean", "description": "Load the ELF onto the board before debugging.", "default": true },
-              "target": { "type": "string", "description": "OpenOCD target script (e.g. stm32l4x); default thub.defaultTarget or the runner card's." },
-              "svdFile": { "type": "string", "description": "The chip's SVD file for the peripheral view." },
-              "runToEntryPoint": { "type": "string", "description": "Stop at this function after reset.", "default": "main" },
-              "probe": { "type": "number", "description": "Which ST-Link (1, 2 …).", "default": 1 }
+              "executable": {
+                "type": "string",
+                "description": "The ELF to debug.",
+                "default": "${workspaceFolder}/build/${workspaceFolderBasename}.elf"
+              },
+              "flash": {
+                "type": "boolean",
+                "description": "Load the ELF onto the board before debugging.",
+                "default": true
+              },
+              "target": {
+                "type": "string",
+                "description": "OpenOCD target script (e.g. stm32l4x); default thub.defaultTarget or the runner card's."
+              },
+              "svdFile": {
+                "type": "string",
+                "description": "The chip's SVD file for the peripheral view."
+              },
+              "runToEntryPoint": {
+                "type": "string",
+                "description": "Stop at this function after reset.",
+                "default": "main"
+              },
+              "probe": {
+                "type": "number",
+                "description": "Which ST-Link (1, 2 …).",
+                "default": 1
+              }
             }
           },
           "attach": {
-            "required": ["executable"],
+            "required": [
+              "executable"
+            ],
             "properties": {
-              "executable": { "type": "string", "description": "The ELF that's on the board (for symbols)." },
-              "svdFile": { "type": "string", "description": "The chip's SVD file for the peripheral view." },
-              "probe": { "type": "number", "description": "Which ST-Link (1, 2 …).", "default": 1 }
+              "executable": {
+                "type": "string",
+                "description": "The ELF that's on the board (for symbols)."
+              },
+              "svdFile": {
+                "type": "string",
+                "description": "The chip's SVD file for the peripheral view."
+              },
+              "probe": {
+                "type": "number",
+                "description": "Which ST-Link (1, 2 …).",
+                "default": 1
+              }
             }
           }
         },
@@ -298,12 +690,24 @@
           {
             "label": "thub: Debug on reserved board",
             "description": "Flash and debug your reserved board over thub",
-            "body": { "type": "thub", "request": "launch", "name": "thub: Debug on reserved board", "executable": "^\"\\${workspaceFolder}/build/\\${workspaceFolderBasename}.elf\"", "flash": true, "runToEntryPoint": "main" }
+            "body": {
+              "type": "thub",
+              "request": "launch",
+              "name": "thub: Debug on reserved board",
+              "executable": "^\"\\${workspaceFolder}/build/\\${workspaceFolderBasename}.elf\"",
+              "flash": true,
+              "runToEntryPoint": "main"
+            }
           },
           {
             "label": "thub: Attach to reserved board",
             "description": "Attach to what's running on your reserved board",
-            "body": { "type": "thub", "request": "attach", "name": "thub: Attach to reserved board", "executable": "^\"\\${workspaceFolder}/build/\\${workspaceFolderBasename}.elf\"" }
+            "body": {
+              "type": "thub",
+              "request": "attach",
+              "name": "thub: Attach to reserved board",
+              "executable": "^\"\\${workspaceFolder}/build/\\${workspaceFolderBasename}.elf\""
+            }
           }
         ]
       }
