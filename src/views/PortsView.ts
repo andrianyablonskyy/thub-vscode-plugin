@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import type { SessionManager } from '../session/SessionManager';
 import type { DebugTracker } from '../debug/ThubDebugProvider';
 import { SerialTerminal } from '../serial/SerialTerminal';
-import { page } from '../util/webview';
+import { ICONS, page } from '../util/webview';
 import type { Features } from '../cli/types';
 
 interface Row {
@@ -14,8 +14,19 @@ interface Row {
   remote: string;
   local: string;
   status: { text: string; tone: 'ok' | 'idle' | 'err' };
-  actions: Array<{ label: string; msg: Record<string, unknown>; primary?: boolean }>;
+  actions: Array<{ label: string; msg: Record<string, unknown>; primary?: boolean; icon?: 'open' | 'copy' | 'edit' | 'remove' }>;
 }
+
+const ACTION_ICONS = {
+  open: ICONS.external,
+  copy: ICONS.copy,
+  edit: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>',
+  remove: '<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg>'
+},
+ADD_ICONS = {
+  rtt: '<svg class="icon" viewBox="0 0 24 24"><path d="M3 7l5 5-5 5M10 18h5"/><path d="M19 8v8m-4-4h8"/></svg>',
+  forward: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 12h13m-5-5 5 5-5 5"/><path d="M20 5v6m-3-3h6"/></svg>'
+};
 
 export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable {
   private view?: vscode.WebviewView;
@@ -79,10 +90,10 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
           remote: `OpenOCD RTT up-channel · ${p.label}`, local: addr,
           status: s.isUp ? { text: 'reading available', tone: 'ok' } : { text: s.link, tone: 'idle' },
           actions: [
-            { label: 'Open logs', msg: { type: 'command', command: 'thub.openRtt', index: p.index }, primary: true },
-            { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` } },
-            { label: 'Configure', msg: { type: 'command', command: 'thub.configureRtt', index: p.index } },
-            { label: 'Remove', msg: { type: 'command', command: 'thub.removeRtt', index: p.index } }
+            { label: 'Open logs', msg: { type: 'command', command: 'thub.openRtt', index: p.index }, primary: true, icon: 'open' },
+            { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` }, icon: 'copy' },
+            { label: 'Configure', msg: { type: 'command', command: 'thub.configureRtt', index: p.index }, icon: 'edit' },
+            { label: 'Remove', msg: { type: 'command', command: 'thub.removeRtt', index: p.index }, icon: 'remove' }
           ]
         });
       }
@@ -113,10 +124,10 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
         icon: 'arrow', name: service.name, remote: `localhost:${service.clientPort}`, local: `127.0.0.1:${service.port}`,
         status: s.isUp ? { text: 'forwarding', tone: 'ok' } : { text: s.link, tone: 'idle' },
         actions: [
-          { label: 'Open', msg: { type: 'command', command: 'thub.openForward', name: service.name }, primary: true },
-          { label: 'Copy', msg: { type: 'command', command: 'thub.copyForward', name: service.name } },
-          { label: 'Update', msg: { type: 'command', command: 'thub.updateForward', name: service.name } },
-          { label: 'Remove', msg: { type: 'command', command: 'thub.removeForward', name: service.name } }
+          { label: 'Open', msg: { type: 'command', command: 'thub.openForward', name: service.name }, primary: true, icon: 'open' },
+          { label: 'Copy', msg: { type: 'command', command: 'thub.copyForward', name: service.name }, icon: 'copy' },
+          { label: 'Update', msg: { type: 'command', command: 'thub.updateForward', name: service.name }, icon: 'edit' },
+          { label: 'Remove', msg: { type: 'command', command: 'thub.removeForward', name: service.name }, icon: 'remove' }
         ]
       });
     }
@@ -139,13 +150,14 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
     }
     try {
       await view.webview.postMessage({
-      type: 'state',
-      header: s ? `${s.client} · ${linkText(s.link)}` : '',
-      hasSession: Boolean(s),
-      hasReservation: Boolean(this.mgr.mine),
-      rows: this.rows(),
-      canForward: f.connectForward,
-      canRtt: f.connectRtt && Boolean(s?.ready?.ports.some((port) => port.kind === 'swd'))
+        type: 'state',
+        header: s ? `${s.client} · ${linkText(s.link)}` : '',
+        hasSession: Boolean(s),
+        hasReservation: Boolean(this.mgr.mine),
+        rows: this.rows(),
+        canForward: f.connectForward,
+        canRtt: f.connectRtt && Boolean(s?.ready?.ports.some((port) => port.kind === 'swd')),
+        rttFeature: f.connectRtt
       });
     }
     catch (err){
@@ -174,20 +186,27 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
 
   private html(webview: vscode.Webview): string {
     const body = `
-<div class="top"><span></span><span class="muted" id="header"></span></div>
+<div class="top"><span class="muted" id="header"></span><div class="top-actions">
+  <button class="act icon" id="addRtt" title="Add RTT reader" aria-label="Add RTT reader" hidden>${ADD_ICONS.rtt}</button>
+  <button class="act icon" id="addForward" title="Add forwarded service" aria-label="Add forwarded service" hidden>${ADD_ICONS.forward}</button>
+</div></div>
 <div id="empty" class="muted"></div>
 <table id="table"><thead><tr><th>Name</th><th>On the board's Client</th><th>Local address</th><th>Status</th><th class="right">Actions</th></tr></thead><tbody id="rows"></tbody></table>
-<div id="forward" class="muted small"></div>
-<div id="rtt" class="muted small"></div>`,
+<div id="featureWarning" class="muted small"></div>`,
       css = `
 body { padding: 6px 16px; }
-.top { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.top { display: flex; justify-content: space-between; align-items: center; min-height: 34px; margin-bottom: 4px; }
+.top-actions { display: flex; gap: 4px; }
+.top-actions button[hidden] { display: none; }
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; font-size: .78em; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--border); }
 td { padding: 7px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 td.remote, td.local { font-family: var(--vscode-editor-font-family); }
 .right { text-align: right; }
 .act { border: 0; background: none; padding: 0 0 0 14px; color: var(--muted); }
+.act.icon { width: 30px; height: 30px; padding: 5px; vertical-align: middle; }
+.act.icon.primary { color: var(--accent); }
+.act.icon:hover { color: var(--vscode-foreground); }
 .act.primary { color: var(--accent); }
 .tone-ok { color: var(--ok); } .tone-err { color: var(--error); }
 .small { font-size: .9em; margin-top: 10px; }
@@ -195,27 +214,28 @@ td.remote, td.local { font-family: var(--vscode-editor-font-family); }
       script = `
 const $ = (s) => document.querySelector(s), esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const ICON = { terminal: '>_', bug: '⏻', camera: '▭', arrow: '→' };
+const ACTION_ICONS = ${JSON.stringify(ACTION_ICONS)};
 window.addEventListener('message', ({ data }) => {
   if (data.type !== 'state') return;
   $('#header').textContent = data.header;
+  $('#addForward').hidden = !(data.canForward && data.hasReservation);
+  $('#addRtt').hidden = !(data.canRtt && data.hasSession);
   $('#table').style.display = data.rows.length ? 'table' : 'none';
   $('#empty').innerHTML = data.rows.length ? '' : data.hasSession ? 'Connecting… the ports appear once the board\\'s Client is linked.'
     : data.hasReservation ? 'Your board isn\\'t connected. <button class="link" id="connect">Connect</button>'
     : 'No board reserved. <button class="link" id="reserve">Reserve a board</button>';
   $('#connect')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.connect' }));
   $('#reserve')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.reserve' }));
+  $('#addForward').onclick = () => vscode.postMessage({ type: 'command', command: 'thub.addForward' });
+  $('#addRtt').onclick = () => vscode.postMessage({ type: 'command', command: 'thub.addRtt' });
   $('#rows').innerHTML = data.rows.map((r, i) => '<tr><td>' + ICON[r.icon] + ' ' + esc(r.name) + '</td><td class="remote">' + esc(r.remote) +
     '</td><td class="local">' + esc(r.local) + '</td><td class="tone-' + r.status.tone + '"><span class="dot ' + (r.status.tone === 'ok' ? 'ok' : r.status.tone === 'err' ? 'err' : 'idle') + '"></span>' +
-    esc(r.status.text) + '</td><td class="right">' + r.actions.map((a, j) => '<button class="act' + (a.primary ? ' primary' : '') + '" data-r="' + i + '" data-a="' + j + '">' + esc(a.label) + '</button>').join('') + '</td></tr>').join('');
-  document.querySelectorAll('.act').forEach((b) => b.onclick = () => vscode.postMessage(data.rows[b.dataset.r].actions[b.dataset.a].msg));
-  $('#forward').innerHTML = data.canForward && data.hasReservation
-    ? '<button id="addForward">Add forwarded service…</button>'
-    : data.hasReservation ? 'Forwarded services need a newer thub CLI with connect --forward.' : '';
-  $('#addForward')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.addForward' }));
-  $('#rtt').innerHTML = data.canRtt && data.hasSession
-    ? '<button id="addRtt">Add RTT reader…</button>'
-    : data.hasSession ? 'RTT is unavailable in the configured Agent CLI. Clear thub.cliPath to use the extension-managed CLI.' : '';
-  $('#addRtt')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.addRtt' }));
+    esc(r.status.text) + '</td><td class="right">' + r.actions.map((a, j) => '<button class="act' + (a.icon ? ' icon' : '') + (a.primary ? ' primary' : '') + '" title="' + esc(a.label) +
+    '" aria-label="' + esc(a.label) + '" data-r="' + i + '" data-a="' + j + '">' + (a.icon ? ACTION_ICONS[a.icon] : esc(a.label)) + '</button>').join('') + '</td></tr>').join('');
+  document.querySelectorAll('#rows .act').forEach((b) => b.onclick = () => vscode.postMessage(data.rows[b.dataset.r].actions[b.dataset.a].msg));
+  $('#featureWarning').textContent = data.hasReservation && !data.canForward
+    ? 'Forwarded services need a newer thub CLI with connect --forward.'
+    : data.hasSession && !data.rttFeature ? 'RTT is unavailable in the configured Agent CLI. Clear thub.cliPath to use the extension-managed CLI.' : '';
 });
 vscode.postMessage({ type: 'ready' });
 `;

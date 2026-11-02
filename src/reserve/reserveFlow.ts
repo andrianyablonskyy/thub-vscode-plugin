@@ -18,8 +18,34 @@ interface DurationPick extends vscode.QuickPickItem {
 
 export async function reserveFlow(mgr: SessionManager, preselected?: string): Promise<void> {
   await mgr.refresh();
-  if (mgr.mine){
-    const pick = await vscode.window.showInformationMessage(`You already hold ${mgr.mine.name}.`, 'Extend 1h', 'Release it');
+  const mine = mgr.mine;
+  let board: Resource | undefined;
+  if (mine && preselected && preselected !== mine.name){
+    const target = mgr.resources.find((r) => r.name === preselected && r.type === 'hw');
+    if (!target){
+      throw new Error(`Board ${preselected} is no longer available`);
+    }
+    const action = `Release ${mine.name} and switch`,
+      pick = await vscode.window.showWarningMessage(
+        `You already hold ${mine.name}. Release it and reserve ${target.name} instead?`,
+        { modal: true },
+        action,
+        'Cancel'
+      );
+    if (pick !== action){
+      return;
+    }
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `thub: releasing ${mine.name}` },
+      () => mgr.release()
+    );
+    board = mgr.resources.find((r) => r.name === preselected && r.type === 'hw');
+    if (!board){
+      throw new Error(`Board ${preselected} is no longer available`);
+    }
+  }
+  else if (mine){
+    const pick = await vscode.window.showInformationMessage(`You already hold ${mine.name}.`, 'Extend 1h', 'Release it');
     if (pick === 'Extend 1h'){
       await mgr.extend(60);
     }
@@ -28,7 +54,7 @@ export async function reserveFlow(mgr: SessionManager, preselected?: string): Pr
     }
     return;
   }
-  const board = preselected ? mgr.resources.find((r) => r.name === preselected) : await pickBoard(mgr);
+  board ??= preselected ? mgr.resources.find((r) => r.name === preselected) : await pickBoard(mgr);
   if (!board){
     return;
   }
