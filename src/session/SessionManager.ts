@@ -10,7 +10,7 @@ import { RttStore, normalizeRtts } from '../rtt/RttStore';
 import { supportsResourceFeature } from './resourceFeatures';
 import { Session } from './Session';
 import { resourceSlot, resourceToReplace } from './resourceSlots';
-import { settings } from '../util/config';
+import { mainFolder, settings } from '../util/config';
 
 /** Warn this long before a reservation ends (once per reservation). */
 const WARN_MS = 10 * 60_000,
@@ -310,7 +310,9 @@ export class SessionManager implements vscode.Disposable {
     const reservationId = mine.reservation.id;
     this.activeClient = mine.name;
     const existing = this.sessions.get(mine.name),
-      wantedTarget = target || settings.defaultTarget() || undefined;
+      // Explicit target, else the workspace's flash target, else the default target.
+      // The folder-level setting: in a multi-root window the target isn't on the workspace level.
+      wantedTarget = target || settings.flashAfterBuild(mainFolder()).target || settings.defaultTarget() || undefined;
     // Reuse unless an explicit OpenOCD target differs; no target requested = keep what's up.
     if (existing?.reservationId === reservationId && (!wantedTarget || existing.target === wantedTarget)){
       this.changed.fire();
@@ -329,7 +331,7 @@ export class SessionManager implements vscode.Disposable {
     }
     this.sessions.get(mine.name)?.end('Replaced');
     const id = reservationId,
-      session = new Session(this.cli, this.log, mine, target || settings.defaultTarget() || undefined, async () => {
+      session = new Session(this.cli, this.log, mine, wantedTarget, async () => {
         await this.refresh();
         return this.findMine(mine.name)?.reservation?.id === id;
       }, forwards, rtts);
