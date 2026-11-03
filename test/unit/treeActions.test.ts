@@ -24,7 +24,10 @@ suite('tree actions', () => {
     assert.equal(treeItemIndex({ id: 'endpoint:hil%3A1:0:127.0.0.1%3A5001' }), 0);
     assert.equal(treeItemName({ label: 'hil-1' }), 'hil-1');
     assert.equal(treeItemName({ label: { label: 'hil-2', highlights: [] } }), 'hil-2');
+    assert.equal(treeItemName({ kind: 'board', board: { id: 'resource-123', name: 'hil-3' } }), 'hil-3');
+    assert.equal(treeItemName({ id: 'resource-123', name: 'hil-4', type: 'hw' }), 'hil-4');
     assert.equal(treeItemBoardId({ id: 'board:resource-123', label: 'hil-3' }), 'resource-123');
+    assert.equal(treeItemBoardId({ kind: 'board', board: { id: 'resource-456', name: 'hil-5' } }), 'resource-456');
     assert.equal(treeItemBoardId({ id: 'endpoint:hil-1:0:' }), undefined);
   });
 

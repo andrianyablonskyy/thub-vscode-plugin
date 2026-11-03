@@ -29,7 +29,7 @@ While you hold a resource, only your jobs run on it. Ten minutes before either r
 
 ## Local development
 
-On macOS, run `../bin/update-plugin-locally` from any directory to package the extension, install it into the selected local VS Code profile, and reload its window. It uses `code` or `code-insiders` from `PATH` (or the standard application install paths); set `VSCODE_CLI` to choose another CLI. macOS may ask you to allow Terminal to control VS Code under **System Settings → Privacy & Security → Accessibility**.
+On macOS, run `../bin/update-plugin-locally` from any directory to package the extension, install it into the selected local VS Code profile, verify the installed version, and reload its window. It uses `code` or `code-insiders` from `PATH` (or the standard application install paths); set `VSCODE_CLI` to choose another CLI and `VSCODE_PROFILE` to target a named profile. macOS may ask you to allow Terminal to control VS Code under **System Settings → Privacy & Security → Accessibility**.
 
 ## Flash
 

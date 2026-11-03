@@ -46,6 +46,12 @@ export function treeItemName(value: unknown): string | undefined {
   if (typeof value.client === 'string'){
     return value.client;
   }
+  if (typeof value.name === 'string'){
+    return value.name;
+  }
+  if (isRecord(value.board) && typeof value.board.name === 'string'){
+    return value.board.name;
+  }
   if (typeof value.label === 'string'){
     return value.label;
   }
@@ -53,10 +59,13 @@ export function treeItemName(value: unknown): string | undefined {
 }
 
 export function treeItemBoardId(value: unknown): string | undefined {
-  if (!isRecord(value) || typeof value.id !== 'string' || !value.id.startsWith('board:')){
+  if (!isRecord(value)){
     return undefined;
   }
-  return value.id.slice('board:'.length) || undefined;
+  if (typeof value.id === 'string' && value.id.startsWith('board:')){
+    return value.id.slice('board:'.length) || undefined;
+  }
+  return isRecord(value.board) && typeof value.board.id === 'string' ? value.board.id : undefined;
 }
 
 export function treeItemForwardName(value: unknown): string | undefined {

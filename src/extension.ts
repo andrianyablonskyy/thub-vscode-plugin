@@ -153,7 +153,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command('thub.refresh', () => mgr.refresh());
   command('thub.showLog', () => log.show());
   command('thub.reserve', (value?: unknown) => {
-    const name = treeItemName(value) || mgr.resources.find((resource) => resource.id === treeItemBoardId(value))?.name;
+    const name = mgr.resources.find((resource) => resource.id === treeItemBoardId(value))?.name || treeItemName(value);
     return reserveFlow(mgr, name);
   });
   command('thub.extend', async (value?: unknown) => {
