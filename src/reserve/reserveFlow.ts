@@ -3,6 +3,7 @@
 
 import * as vscode from 'vscode';
 import type { SessionManager } from '../session/SessionManager';
+import { supportsResourceFeature } from '../session/resourceFeatures';
 import { resourceSlot, resourceToReplace } from '../session/resourceSlots';
 import { boardState, formatLeft, labelsSummary, msUntil, parseDurationMin } from '../cli/parse';
 import type { Resource } from '../cli/types';
@@ -140,8 +141,9 @@ function pickDuration(board: Resource): Promise<{ minutes: number; connect: bool
   const qp = vscode.window.createQuickPick<DurationPick>(),
     preferred = parseDurationMin(settings.defaultDuration()) || 120;
   let connect = true;
-  const toggle: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('pass-filled'), tooltip: 'Connect right away (UART, GDB, camera): on' },
-    toggleOff: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('circle-large-outline'), tooltip: 'Connect right away (UART, GDB, camera): off' },
+  const connectFeatures = supportsResourceFeature(board, 'uart') ? 'UART, GDB, camera' : 'GDB',
+    toggle: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('pass-filled'), tooltip: `Connect right away (${connectFeatures}): on` },
+    toggleOff: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('circle-large-outline'), tooltip: `Connect right away (${connectFeatures}): off` },
     title = () => `thub: Reserve board › ${board.name} › For how long?  ·  Connect right away: ${connect ? 'on' : 'off'}`;
   qp.title = title();
   qp.step = 2;

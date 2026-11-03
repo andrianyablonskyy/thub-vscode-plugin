@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { ThubCli, ThubError } from './cli/ThubCli';
 import { AgentRuntime } from './cli/AgentRuntime';
 import { SessionManager } from './session/SessionManager';
+import { supportsResourceFeature } from './session/resourceFeatures';
 import { BoardsTree } from './views/BoardsTree';
 import { treeItemAddress, treeItemClient, treeItemForwardName, treeItemIndex, treeItemName } from './views/treeActions';
 import { PortsView } from './views/PortsView';
@@ -50,7 +51,7 @@ export function activate(context: vscode.ExtensionContext): void {
     power = new Power(cli, mgr),
     serial = new SerialTerminals(),
     rttTerminals = new RttTerminals(),
-    debugTracker = new DebugTracker(() => {
+    debugTracker = new DebugTracker(mgr, () => {
       statusBar.update();
       ports.refresh();
     }),
@@ -109,6 +110,12 @@ export function activate(context: vscode.ExtensionContext): void {
       return name;
     }
     return undefined;
+  };
+  const requireResourceFeature = (client: string | undefined, feature: 'uart' | 'rtt' | 'video', label: string): void => {
+    const resource = mgr.findMine(client);
+    if (resource && !supportsResourceFeature(resource, feature)){
+      throw new Error(`${label} is not available for SIL resources`);
+    }
   };
 
   command('thub.signIn', async () => {
@@ -185,7 +192,9 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   command('thub.reattachDebugger', () => debugTracker.reattach());
   command('thub.openSerial', async (value?: unknown, client?: string) => {
-    const session = await mgr.ensureUp('The serial port', undefined, selectedClient(value, client)),
+    const target = selectedClient(value, client);
+    requireResourceFeature(target, 'uart', 'UART');
+    const session = await mgr.ensureUp('The serial port', undefined, target),
       uarts = session.ready?.ports.filter((p) => p.kind === 'uart') || [];
     if (!uarts.length){
       throw new Error(`${session.client} has no UARTs`);
@@ -207,11 +216,15 @@ export function activate(context: vscode.ExtensionContext): void {
   };
   command('thub.addRtt', async (value?: unknown) => {
     await requireRttFeature();
-    await configureRtt(mgr, rttTerminals, undefined, selectedClient(value));
+    const target = selectedClient(value);
+    requireResourceFeature(target, 'rtt', 'RTT');
+    await configureRtt(mgr, rttTerminals, undefined, target);
   });
   command('thub.configureRtt', async (value?: unknown, client?: string) => {
     await requireRttFeature();
-    await configureRtt(mgr, rttTerminals, treeItemIndex(value), selectedClient(value, client));
+    const target = selectedClient(value, client);
+    requireResourceFeature(target, 'rtt', 'RTT');
+    await configureRtt(mgr, rttTerminals, treeItemIndex(value), target);
   });
   command('thub.openRtt', async (value?: unknown, client?: string) => {
     const index = treeItemIndex(value);
@@ -219,23 +232,29 @@ export function activate(context: vscode.ExtensionContext): void {
       throw new Error('Select an ST-Link RTT reader to open');
     }
     await requireRttFeature();
-    await openRtt(mgr, rttTerminals, index, selectedClient(value, client));
+    const target = selectedClient(value, client);
+    requireResourceFeature(target, 'rtt', 'RTT');
+    await openRtt(mgr, rttTerminals, index, target);
   });
   command('thub.removeRtt', async (value?: unknown, client?: string) => {
     const index = treeItemIndex(value);
     if (index === undefined){
       throw new Error('Select an ST-Link RTT reader to remove');
     }
-    await removeRtt(mgr, rttTerminals, index, selectedClient(value, client));
+    const target = selectedClient(value, client);
+    requireResourceFeature(target, 'rtt', 'RTT');
+    await removeRtt(mgr, rttTerminals, index, target);
   });
   command('thub.openVideo', async (value?: unknown) => {
-    const session = await mgr.ensureUp('The camera', undefined, selectedClient(value));
+    const target = selectedClient(value);
+    requireResourceFeature(target, 'video', 'Camera');
+    const session = await mgr.ensureUp('The camera', undefined, target);
     if (!session.videoUrl){
       throw new Error(`${session.client} has no camera (runners with one carry the label video-stream)`);
     }
     VideoPanel.show(session, power);
   });
-  command('thub.powerCycle', () => power.run('reset', { delaySec: 2 }));
+  command('thub.powerCycle', () => power.run('reset', { delaySec: 2, client: debugTracker.active?.configuration.thubClient }));
   command('thub.powerOn', () => power.run('on'));
   command('thub.powerOff', () => power.run('off'));
   const requireForwardFeature = async () => {

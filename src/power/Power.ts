@@ -8,6 +8,7 @@
 import * as vscode from 'vscode';
 import type { ThubCli } from '../cli/ThubCli';
 import type { SessionManager } from '../session/SessionManager';
+import { supportsResourceFeature } from '../session/resourceFeatures';
 
 export type PowerAction = 'on' | 'off' | 'reset';
 
@@ -21,6 +22,9 @@ export class Power {
     const board = this.mgr.findMine(client);
     if (!board){
       return { ok: false, why: 'Reserve a board first.' };
+    }
+    if (!supportsResourceFeature(board, 'power')){
+      return { ok: false, why: 'USB power control is not available for SIL resources.' };
     }
     const jobs = await this.cli.jobs().catch(() => this.mgr.jobs),
       job = jobs.find((j) => (j.state === 'PREPARING' || j.state === 'RUNNING') && j.resource_id === board.id);

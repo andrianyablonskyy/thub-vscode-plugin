@@ -3,6 +3,7 @@
 
 import * as vscode from 'vscode';
 import type { SessionManager } from '../session/SessionManager';
+import { supportsResourceFeature } from '../session/resourceFeatures';
 import { boardModel, boardState, formatLeft, labelsSummary, msUntil } from '../cli/parse';
 import type { BoardState, ConnectForward, Job, Resource } from '../cli/types';
 import { linkText } from './PortsView';
@@ -65,6 +66,10 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       nodes: Node[] = [{ kind: 'sessionHeader', board }];
     if (s?.ready){
       for (const p of s.ready.ports){
+        if (p.kind === 'uart' && !supportsResourceFeature(board, 'uart') ||
+          p.kind === 'rtt' && !supportsResourceFeature(board, 'rtt')){
+          continue;
+        }
         nodes.push(p.kind === 'uart'
           ? { kind: 'endpoint', label: `UART ${p.index}`, context: 'endpoint.uart', client: board.name, index: p.index, address: `${p.host}:${p.port}`,
             command: { command: 'thub.openSerial', title: 'Open serial', arguments: [p.index, board.name] } }
@@ -73,20 +78,23 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
             : { kind: 'endpoint', label: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`, context: 'endpoint.rtt', client: board.name, index: p.index, address: `${p.host}:${p.port}`,
               command: { command: 'thub.openRtt', title: 'Open RTT logs', arguments: [p.index, board.name] } });
       }
-      if (s.ready.video){
+      if (s.ready.video && supportsResourceFeature(board, 'video')){
         nodes.push({ kind: 'endpoint', label: 'Video', context: 'endpoint.video', client: board.name, address: s.ready.video.url,
           command: { command: 'thub.openVideo', title: 'Open camera', arguments: [board.name] } });
       }
       for (const service of s.ready.forwards || []){
         nodes.push({ kind: 'forward', service, client: board.name });
       }
-      nodes.push(
-        { kind: 'action', label: 'Flash', icon: 'arrow-up', command: { command: 'thub.flash', title: 'Flash', arguments: [board.name] }, primary: true },
-        { kind: 'action', label: 'Debug', icon: 'debug-alt', command: { command: 'thub.debug', title: 'Debug', arguments: [board.name] } }
-      );
+      if (s.ready.ports.some((p) => p.kind === 'swd') && supportsResourceFeature(board, 'gdb')){
+        nodes.push(
+          { kind: 'action', label: 'Flash', icon: 'arrow-up', command: { command: 'thub.flash', title: 'Flash', arguments: [board.name] }, primary: true },
+          { kind: 'action', label: 'Debug', icon: 'debug-alt', command: { command: 'thub.debug', title: 'Debug', arguments: [board.name] } }
+        );
+      }
     }
     else {
-      nodes.push({ kind: 'action', label: 'Connect (UART, GDB, camera)', icon: 'plug',
+      const connectLabel = supportsResourceFeature(board, 'uart') ? 'Connect (UART, GDB, camera)' : 'Connect (GDB)';
+      nodes.push({ kind: 'action', label: connectLabel, icon: 'plug',
         command: { command: 'thub.connect', title: 'Connect', arguments: [board.name] }, primary: true });
     }
     nodes.push({ kind: 'action', label: 'Release board', icon: 'unlock',
@@ -114,9 +122,11 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       case 'sessionHeader': {
         const s = this.mgr.getSession(node.board.name),
           left = msUntil(node.board.reservation?.until),
-          item = new vscode.TreeItem(node.board.name);
+          item = new vscode.TreeItem(node.board.name),
+          hasGdb = Boolean(s?.ready?.ports.some((p) => p.kind === 'swd')),
+          context = hasGdb ? 'session.gdb' : 'session';
         item.id = `session-header:${node.board.id}`;
-        item.contextValue = s?.ready?.ports.some((p) => p.kind === 'swd') ? 'session.gdb' : 'session';
+        item.contextValue = supportsResourceFeature(node.board, 'rtt') ? context : `${context}.sil`;
         item.description = `${formatLeft(left)} · ${s ? linkText(s.link) : 'not connected'}`;
         item.iconPath = new vscode.ThemeIcon(s && s.link !== 'up' && s.link !== 'ended' ? 'sync~spin' : 'lock', left < 10 * 60_000 ? error : accent);
         item.tooltip = new vscode.MarkdownString([

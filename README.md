@@ -21,9 +21,15 @@ Work on the boards in your **TestHub** lab without leaving the editor: reserve a
 
 If you already hold a resource of the same kind, the resource switch dialog lets you choose another. Switching releases only that HIL or SIL lock; a lock of the other kind stays in place.
 
+SIL sessions expose only GDB (debug and flash) and port forwarding. UART, RTT, camera and USB power controls are available only for HIL resources.
+
 On first activation, the extension installs the latest Agent CLI into its global storage; it updates that managed copy if needed Agent features are missing. No global `thub` installation is required. Set **thub.cliPath** only to explicitly use a separately managed CLI. For flashing and debugging on Windows, install a Windows ARM GNU Toolchain and set **thub.gdbPath** to its `arm-none-eabi-gdb.exe` if it isn't on `PATH`. Likewise, set **thub.video.ffmpegPath** or **thub.video.player** to the `.exe` path when optional video tools are not on `PATH`.
 
 While you hold a resource, only your jobs run on it. Ten minutes before either reservation ends, you're offered **Extend 1h** or **Release now** for that resource. When it ends, only its terminals, camera and debug session close.
+
+## Local development
+
+On macOS, run `../bin/update-plugin-locally` from any directory to package the extension, install it into the selected local VS Code profile, and reload its window. It uses `code` or `code-insiders` from `PATH` (or the standard application install paths); set `VSCODE_CLI` to choose another CLI. macOS may ask you to allow Terminal to control VS Code under **System Settings → Privacy & Security → Accessibility**.
 
 ## Flash
 

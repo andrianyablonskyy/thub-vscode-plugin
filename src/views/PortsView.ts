@@ -3,6 +3,7 @@
 
 import * as vscode from 'vscode';
 import type { SessionManager } from '../session/SessionManager';
+import { supportsResourceFeature } from '../session/resourceFeatures';
 import type { DebugTracker } from '../debug/ThubDebugProvider';
 import { SerialTerminal } from '../serial/SerialTerminal';
 import { ICONS, page } from '../util/webview';
@@ -74,9 +75,13 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
       if (!ready){
         continue;
       }
+      const resource = this.mgr.findMine(s.client);
       for (const p of ready.ports){
         const addr = `127.0.0.1:${p.port}`;
         if (p.kind === 'uart'){
+          if (resource && !supportsResourceFeature(resource, 'uart')){
+            continue;
+          }
           const n = SerialTerminal.open.get(`${s.client}:uart${p.index}`) || 0;
           rows.push({
             icon: 'terminal', name: `${s.client} · UART ${p.index}`, remote: `${p.label} · ${p.baudRate || 115200} 8N1`, local: addr,
@@ -85,6 +90,9 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
           });
         }
         else if (p.kind === 'rtt'){
+          if (resource && !supportsResourceFeature(resource, 'rtt')){
+            continue;
+          }
           rows.push({
             icon: 'terminal', name: `${s.client} · RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`,
             remote: `OpenOCD RTT up-channel · ${p.label}`, local: addr,
@@ -110,7 +118,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
           });
         }
       }
-      if (ready.video){
+      if (ready.video && (!resource || supportsResourceFeature(resource, 'video'))){
         const v = s.video,
           streaming = v ? v.streaming : true;
         rows.push({
@@ -157,10 +165,12 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
         hasReservation: this.mgr.mines.length > 0,
         rows: this.rows(),
         canForward: f.connectForward,
-        canRtt: f.connectRtt && sessions.some((s) => s.ready?.ports.some((port) => port.kind === 'swd')),
+        canRtt: f.connectRtt && sessions.some((s) => this.mgr.findMine(s.client)?.type === 'hw' &&
+          s.ready?.ports.some((port) => port.kind === 'swd')),
         rttFeature: f.connectRtt,
         client: this.mgr.mine?.name,
-        rttClient: sessions.find((s) => s.ready?.ports.some((port) => port.kind === 'swd'))?.client
+        rttClient: sessions.find((s) => this.mgr.findMine(s.client)?.type === 'hw' &&
+          s.ready?.ports.some((port) => port.kind === 'swd'))?.client
       });
     }
     catch (err){

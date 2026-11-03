@@ -275,12 +275,12 @@
         },
         {
           "command": "thub.connect",
-          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?)$/",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?(\\.sil)?)$/",
           "group": "inline@1"
         },
         {
           "command": "thub.addForward",
-          "when": "view == thub.boards && viewItem =~ /^session(\\.gdb)?$/",
+          "when": "view == thub.boards && viewItem =~ /^session(\\.gdb)?(\\.sil)?$/",
           "group": "inline@2"
         },
         {
@@ -290,17 +290,17 @@
         },
         {
           "command": "thub.release",
-          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?)$/",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?(\\.sil)?)$/",
           "group": "inline@9"
         },
         {
           "command": "thub.extend",
-          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?)$/",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?(\\.sil)?)$/",
           "group": "1_session@1"
         },
         {
           "command": "thub.release",
-          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session)$/",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.sil)?)$/",
           "group": "1_session@2"
         },
         {
@@ -362,7 +362,7 @@
       "debug/toolbar": [
         {
           "command": "thub.powerCycle",
-          "when": "thub.debugging",
+          "when": "thub.debuggingHil",
           "group": "navigation@99"
         }
       ],

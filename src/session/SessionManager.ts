@@ -7,6 +7,7 @@ import { boardState, formatLeft, msUntil } from '../cli/parse';
 import type { ForwardConfig, Job, Me, Resource, RttConfig } from '../cli/types';
 import { ForwardStore, normalizeForwards } from '../forward/ForwardStore';
 import { RttStore, normalizeRtts } from '../rtt/RttStore';
+import { supportsResourceFeature } from './resourceFeatures';
 import { Session } from './Session';
 import { resourceSlot, resourceToReplace } from './resourceSlots';
 import { settings } from '../util/config';
@@ -281,6 +282,9 @@ export class SessionManager implements vscode.Disposable {
     if (!mine){
       throw new Error('Reserve a board before configuring RTT logs');
     }
+    if (!supportsResourceFeature(mine, 'rtt')){
+      throw new Error('RTT is not available for SIL resources');
+    }
     const checked = normalizeRtts(configs);
     if (checked.length && !(await this.cli.getFeatures()).connectRtt){
       throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
@@ -311,7 +315,7 @@ export class SessionManager implements vscode.Disposable {
     if (forwards.length && !(await this.cli.getFeatures()).connectForward){
       throw new Error('The configured thub CLI does not support `connect --forward`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
-    const rtts = this.rttStore.read(mine.id);
+    const rtts = supportsResourceFeature(mine, 'rtt') ? this.rttStore.read(mine.id) : [];
     if (rtts.length && !(await this.cli.getFeatures()).connectRtt){
       throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }

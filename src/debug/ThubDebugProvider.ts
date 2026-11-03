@@ -94,12 +94,12 @@ export class DebugTracker implements vscode.Disposable {
     return this.sessions.get(reservationId);
   }
 
-  constructor(private readonly onChange: () => void){
+  constructor(private readonly mgr: SessionManager, private readonly onChange: () => void){
     this.subs.push(
       vscode.debug.onDidStartDebugSession((s) => {
         if (s.configuration.thubReservation){
           this.sessions.set(s.configuration.thubReservation, s);
-          void vscode.commands.executeCommand('setContext', 'thub.debugging', true);
+          this.updateContexts();
           this.onChange();
         }
       }),
@@ -107,11 +107,18 @@ export class DebugTracker implements vscode.Disposable {
         const reservation = s.configuration.thubReservation;
         if (reservation && this.sessions.get(reservation) === s){
           this.sessions.delete(reservation);
-          void vscode.commands.executeCommand('setContext', 'thub.debugging', this.sessions.size > 0);
+          this.updateContexts();
           this.onChange();
         }
       })
     );
+  }
+
+  private updateContexts(): void {
+    void vscode.commands.executeCommand('setContext', 'thub.debugging', this.sessions.size > 0);
+    void vscode.commands.executeCommand('setContext', 'thub.debuggingHil',
+      [...this.sessions.values()].some((session) => typeof session.configuration.thubClient === 'string' &&
+        this.mgr.findMine(session.configuration.thubClient)?.type === 'hw'));
   }
 
   /** The link came back: the debugger has to reattach (it can't survive a drop). */
