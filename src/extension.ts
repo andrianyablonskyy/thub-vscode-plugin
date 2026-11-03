@@ -182,7 +182,8 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   command('thub.flash', async (value?: unknown) => {
     const cfg = settings.flashAfterBuild(mainFolder());
-    await flasher.flash({ verify: cfg.verify, then: 'run', target: cfg.target || undefined, client: selectedClient(value) });
+    // A GDB record carries its ST-Link index, so no probe picker is shown.
+    await flasher.flash({ verify: cfg.verify, then: 'run', target: cfg.target || undefined, client: selectedClient(value), probe: treeItemIndex(value) });
   });
   command('thub.buildAndFlash', () => fab.buildAndFlash());
   command('thub.configureFlashAfterBuild', () => FlashSettingsPanel.show(fab, mgr));

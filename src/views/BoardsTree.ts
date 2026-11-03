@@ -74,7 +74,7 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
           ? { kind: 'endpoint', label: `UART ${p.index}`, context: 'endpoint.uart', client: board.name, index: p.index, address: `${p.host}:${p.port}`,
             command: { command: 'thub.openSerial', title: 'Open serial', arguments: [p.index, board.name] } }
           : p.kind === 'swd'
-            ? { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, context: 'endpoint.gdb', client: board.name, address: `${p.host}:${p.port}` }
+            ? { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, context: 'endpoint.gdb', client: board.name, index: p.index, address: `${p.host}:${p.port}` }
             : { kind: 'endpoint', label: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`, context: 'endpoint.rtt', client: board.name, index: p.index, address: `${p.host}:${p.port}`,
               command: { command: 'thub.openRtt', title: 'Open RTT logs', arguments: [p.index, board.name] } });
       }

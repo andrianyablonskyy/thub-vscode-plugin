@@ -24,6 +24,8 @@ export interface FlashRequest {
   token?: vscode.CancellationToken;
   target?: string;
   client?: string;
+  /** ST-Link index to flash. Default: ask when the board has several. */
+  probe?: number;
 }
 
 export interface FlashResult extends FlashOutcome {
@@ -91,17 +93,24 @@ export class Flasher {
       }
       await vscode.debug.stopDebugging(debugging);
     }
-    const port = session.gdbPort(1);
+    const probe = await this.pickProbe(session, req.probe, quiet);
+    const port = session.gdbPort(probe);
     if (!port){
-      throw new Error(`${session.client} has no ST-Link (no GDB port)`);
+      throw new Error(`${session.client} has no ST-Link ${probe} (no GDB port)`);
     }
-    const image = await this.resolveImage(req.image);
+    let image = await this.resolveImage(req.image);
     if (!fs.existsSync(image)){
-      throw new Error(`Firmware image not found: ${image}`);
+      // Interactive flash (tree button, command): let the user pick the file.
+      // Tasks and flash-after-build stay strict so they never block on a dialog.
+      const picked = quiet ? undefined : await this.pickImage(image, session.client);
+      if (!picked){
+        throw new Error(`Firmware image not found: ${image}`);
+      }
+      image = picked;
     }
     const hash = crypto.createHash('sha256').update(fs.readFileSync(image)).digest('hex'),
       last = this.state.get<Record<string, string>>(LAST_HASH_KEY, {}),
-      board = `${session.client}:${session.reservationId}`,
+      board = `${session.client}:${session.reservationId}:st-link${probe}`,
       verify = req.verify ?? true,
       then = req.then ?? 'run',
       started = Date.now();
@@ -129,6 +138,42 @@ export class Flasher {
       void this.report(result, session, req);
     }
     return result;
+  }
+
+  /** The ST-Link to flash: the requested one, the only one, or the user's pick. */
+  private async pickProbe(session: Session, requested: number | undefined, quiet: boolean): Promise<number> {
+    const probes = session.ready?.ports.filter((p) => p.kind === 'swd') ?? [];
+    if (requested !== undefined){
+      return requested;
+    }
+    if (probes.length <= 1 || quiet){
+      return probes[0]?.index ?? 1;
+    }
+    const pick = await vscode.window.showQuickPick(
+      probes.map((p) => ({ label: `ST-Link ${p.index}`, description: `${p.label} · ${p.target || session.target || 'no OpenOCD target'}`, index: p.index })),
+      { title: `thub: flash ${session.client} — which ST-Link?` }
+    );
+    if (!pick){
+      throw new Error('Canceled: no ST-Link selected');
+    }
+    return pick.index;
+  }
+
+  /** The configured image is missing: ask for another file, or undefined to cancel. */
+  private async pickImage(missing: string, client: string): Promise<string | undefined> {
+    const choose = 'Select firmware file…',
+      pick = await vscode.window.showWarningMessage(
+        `Firmware image not found: ${missing}`, { modal: true, detail: `Choose the firmware to flash to ${client}.` }, choose);
+    if (pick !== choose){
+      return undefined;
+    }
+    const uris = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      openLabel: 'Flash',
+      defaultUri: vscode.Uri.file(path.dirname(missing)),
+      filters: { Firmware: ['elf', 'hex', 'bin'], 'All files': ['*'] }
+    });
+    return uris?.[0]?.fsPath;
   }
 
   private runGdb(args: string[], write: (t: string) => void, token?: vscode.CancellationToken): Promise<{ code: number | null; output: string }> {
