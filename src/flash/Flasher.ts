@@ -23,6 +23,7 @@ export interface FlashRequest {
   write?: (text: string) => void;
   token?: vscode.CancellationToken;
   target?: string;
+  client?: string;
 }
 
 export interface FlashResult extends FlashOutcome {
@@ -43,7 +44,8 @@ export class Flasher {
   constructor(
     private readonly mgr: SessionManager,
     private readonly state: vscode.Memento,
-    private readonly log: { line: (t: string) => void; show: () => void }
+    private readonly log: { line: (t: string) => void; show: () => void },
+    private readonly debugSession: (reservationId: string) => vscode.DebugSession | undefined
   ){}
 
   get isBusy(): boolean {
@@ -77,10 +79,11 @@ export class Flasher {
 
   private async doFlash(req: FlashRequest): Promise<FlashResult> {
     const quiet = Boolean(req.write),
-      write = req.write || ((t: string) => this.log.line(t.trimEnd()));
+      write = req.write || ((t: string) => this.log.line(t.trimEnd())),
+      session = await this.mgr.ensureUp('Flashing', req.target, req.client);
     // Flash and debug can't share the probe: stop a thub debug session first.
-    const debugging = vscode.debug.activeDebugSession;
-    if (debugging?.configuration.thubReservation){
+    const debugging = this.debugSession(session.reservationId);
+    if (debugging){
       const pick = quiet ? 'Stop debugging and flash' : await vscode.window.showWarningMessage(
         'Flashing needs the probe the debugger is using.', { modal: true }, 'Stop debugging and flash');
       if (!pick){
@@ -88,8 +91,7 @@ export class Flasher {
       }
       await vscode.debug.stopDebugging(debugging);
     }
-    const session = await this.mgr.ensureUp('Flashing', req.target),
-      port = session.gdbPort(1);
+    const port = session.gdbPort(1);
     if (!port){
       throw new Error(`${session.client} has no ST-Link (no GDB port)`);
     }
@@ -161,7 +163,7 @@ export class Flasher {
         this.log.show();
       }
       else if (pick === 'Open serial'){
-        await vscode.commands.executeCommand('thub.openSerial');
+        await vscode.commands.executeCommand('thub.openSerial', undefined, _session.client);
       }
       return;
     }

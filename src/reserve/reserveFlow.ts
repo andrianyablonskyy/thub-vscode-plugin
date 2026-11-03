@@ -3,6 +3,7 @@
 
 import * as vscode from 'vscode';
 import type { SessionManager } from '../session/SessionManager';
+import { resourceSlot, resourceToReplace } from '../session/resourceSlots';
 import { boardState, formatLeft, labelsSummary, msUntil, parseDurationMin } from '../cli/parse';
 import type { Resource } from '../cli/types';
 import { settings } from '../util/config';
@@ -18,80 +19,102 @@ interface DurationPick extends vscode.QuickPickItem {
 
 export async function reserveFlow(mgr: SessionManager, preselected?: string): Promise<void> {
   await mgr.refresh();
-  const mine = mgr.mine;
   let board: Resource | undefined;
-  if (mine && preselected && preselected !== mine.name){
-    const target = mgr.resources.find((r) => r.name === preselected && r.type === 'hw');
+  if (preselected){
+    const target = mgr.resources.find((r) => r.name === preselected);
     if (!target){
       throw new Error(`Board ${preselected} is no longer available`);
     }
-    const action = `Release ${mine.name} and switch`,
+    if (mgr.mines.some((r) => r.name === target.name)){
+      board = await pickBoard(mgr);
+      if (!board){
+        return;
+      }
+    }
+    else {
+      board = target;
+    }
+  }
+  else {
+    board = await pickBoard(mgr);
+    if (!board){
+      return;
+    }
+  }
+
+  const initialBoard = board;
+  if (!initialBoard){
+    return;
+  }
+  const sameType = resourceToReplace(mgr.mines, initialBoard);
+  if (sameType){
+    const kind = resourceSlot(initialBoard),
+      action = `Switch ${kind} resource`,
       pick = await vscode.window.showWarningMessage(
-        `You already hold ${mine.name}. Release it and reserve ${target.name} instead?`,
+        `You already hold ${sameType.name} (${kind}). Release it and reserve ${initialBoard.name}? Your ${initialBoard.type === 'hw' ? 'SIL' : 'HIL'} reservation will remain.`,
         { modal: true },
-        action,
-        'Cancel'
+        action
       );
     if (pick !== action){
       return;
     }
-    await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Notification, title: `thub: releasing ${mine.name}` },
-      () => mgr.release()
-    );
-    board = mgr.resources.find((r) => r.name === preselected && r.type === 'hw');
-    if (!board){
-      throw new Error(`Board ${preselected} is no longer available`);
-    }
   }
-  else if (mine){
-    const pick = await vscode.window.showInformationMessage(`You already hold ${mine.name}.`, 'Extend 1h', 'Release it');
-    if (pick === 'Extend 1h'){
-      await mgr.extend(60);
-    }
-    else if (pick === 'Release it'){
-      await mgr.release();
-    }
-    return;
-  }
-  board ??= preselected ? mgr.resources.find((r) => r.name === preselected) : await pickBoard(mgr);
-  if (!board){
-    return;
-  }
-  const choice = await pickDuration(board);
+  const choice = await pickDuration(initialBoard);
   if (!choice){
     return;
   }
-  await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `thub: reserving ${board.name}` },
-    () => mgr.reserve(board.name, choice.minutes, false));
+  await mgr.refresh();
+  const refreshedBoard = mgr.resources.find((r) => r.name === initialBoard.name);
+  if (!refreshedBoard || (!mgr.mines.some((r) => r.name === refreshedBoard.name) && !['idle', 'job'].includes(boardState(refreshedBoard)))){
+    throw new Error(`Board ${initialBoard.name} is no longer available`);
+  }
+  let selectedBoard = refreshedBoard;
+  if (sameType){
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: `thub: releasing ${sameType.name}` },
+      () => mgr.release(sameType.name)
+    );
+    await mgr.refresh();
+    const refreshed = mgr.resources.find((r) => r.name === selectedBoard.name);
+    if (!refreshed || (!mgr.mines.some((r) => r.name === refreshed.name) && !['idle', 'job'].includes(boardState(refreshed)))){
+      throw new Error(`Board ${selectedBoard.name} is no longer available`);
+    }
+    selectedBoard = refreshed;
+  }
+  await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `thub: reserving ${selectedBoard.name}` },
+    () => mgr.reserve(selectedBoard.name, choice.minutes, false));
   if (choice.connect){
-    await mgr.connect();
+    await mgr.connect(selectedBoard.name);
   }
 }
 
 function pickBoard(mgr: SessionManager): Promise<Resource | undefined> {
   const qp = vscode.window.createQuickPick<BoardPick>(),
-    boards = mgr.resources.filter((r) => r.type === 'hw'),
+    boards = mgr.resources.filter((r) => r.type === 'hw' || r.type === 'sw'),
     idle = boards.filter((r) => boardState(r) === 'idle'),
     busy = boards.filter((r) => ['job', 'reserved'].includes(boardState(r))),
     item = (r: Resource): BoardPick => {
       const state = boardState(r),
-        model = labelsSummary(r);
-      return state === 'idle'
-        ? { label: `$(circle-large-outline) ${r.name}`, description: model, board: r }
-        : state === 'job'
-          ? { label: `$(circle-filled) ${r.name}`, description: model, detail: 'Running a job · reserve to have it after that job', board: r }
-          : { label: `$(lock) ${r.name}`, description: model, detail: `Reserved by ${r.reservation?.by || 'someone'} · frees in ${formatLeft(msUntil(r.reservation?.until))}` };
+          model = labelsSummary(r),
+          kind = r.type === 'hw' ? 'HIL' : 'SIL';
+        return state === 'idle'
+          ? { label: `$(circle-large-outline) ${r.name}`, description: `${kind}${model ? ` · ${model}` : ''}`, board: r }
+          : state === 'job'
+            ? { label: `$(circle-filled) ${r.name}`, description: `${kind}${model ? ` · ${model}` : ''}`, detail: 'Running a job · reserve to have it after that job', board: r }
+            : { label: `$(lock) ${r.name}`, description: `${kind}${model ? ` · ${model}` : ''}`, detail: `Reserved by ${r.reservation?.by || 'someone'} · frees in ${formatLeft(msUntil(r.reservation?.until))}` };
     };
-  qp.title = 'thub: Reserve board';
+    qp.title = mgr.mines.length ? 'thub: Switch or add a resource lock' : 'thub: Reserve resource';
   qp.placeholder = 'Filter by name or board (e.g. f401)';
   qp.step = 1;
   qp.totalSteps = 2;
   qp.matchOnDescription = true;
   qp.items = [
-    { label: 'Idle now', kind: vscode.QuickPickItemKind.Separator },
-    ...idle.map(item),
-    ...(busy.length ? [{ label: 'Busy', kind: vscode.QuickPickItemKind.Separator }, ...busy.map(item)] : [])
+    { label: 'HIL', kind: vscode.QuickPickItemKind.Separator },
+    ...idle.filter((r) => r.type === 'hw').map(item),
+    ...busy.filter((r) => r.type === 'hw').map(item),
+    { label: 'SIL', kind: vscode.QuickPickItemKind.Separator },
+    ...idle.filter((r) => r.type === 'sw').map(item),
+    ...busy.filter((r) => r.type === 'sw').map(item)
   ];
   return new Promise((resolve) => {
     qp.onDidAccept(() => {

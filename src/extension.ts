@@ -5,6 +5,7 @@ import { ThubCli, ThubError } from './cli/ThubCli';
 import { AgentRuntime } from './cli/AgentRuntime';
 import { SessionManager } from './session/SessionManager';
 import { BoardsTree } from './views/BoardsTree';
+import { treeItemAddress, treeItemClient, treeItemForwardName, treeItemIndex, treeItemName } from './views/treeActions';
 import { PortsView } from './views/PortsView';
 import { StatusBar } from './views/StatusBar';
 import { SerialTerminals } from './serial/SerialTerminal';
@@ -49,11 +50,11 @@ export function activate(context: vscode.ExtensionContext): void {
     power = new Power(cli, mgr),
     serial = new SerialTerminals(),
     rttTerminals = new RttTerminals(),
-    flasher = new Flasher(mgr, context.workspaceState, log),
     debugTracker = new DebugTracker(() => {
       statusBar.update();
       ports.refresh();
     }),
+    flasher = new Flasher(mgr, context.workspaceState, log, (reservationId) => debugTracker.debugSession(reservationId)),
     fab = new FlashAfterBuild(mgr, flasher, power, serial, context.workspaceState, log.line),
     tree = new BoardsTree(mgr),
     treeView = vscode.window.createTreeView('thub.boards', { treeDataProvider: tree, showCollapseAll: false }),
@@ -101,6 +102,14 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     })
   );
+  const selectedClient = (value?: unknown, explicit?: unknown): string | undefined => {
+    const name = typeof explicit === 'string' ? explicit : treeItemClient(value) || treeItemName(value);
+    if (name && mgr.findMine(name)){
+      mgr.selectResource(name);
+      return name;
+    }
+    return undefined;
+  };
 
   command('thub.signIn', async () => {
     const url = await vscode.window.showInputBox({
@@ -128,7 +137,7 @@ export function activate(context: vscode.ExtensionContext): void {
     void vscode.window.showInformationMessage(`thub: signed in to ${url} as ${who}`);
   });
   command('thub.signOut', async () => {
-    mgr.session?.end('Signed out');
+    mgr.activeSessions.forEach((session) => session.end('Signed out'));
     await context.secrets.delete(KEY_SECRET);
     mgr.forgetIdentity();
     mgr.setSignedIn(false);
@@ -136,48 +145,52 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   command('thub.refresh', () => mgr.refresh());
   command('thub.showLog', () => log.show());
-  command('thub.reserve', (name?: string) => reserveFlow(mgr, typeof name === 'string' ? name : undefined));
-  command('thub.extend', async () => {
-    await mgr.extend(60);
-    const mine = mgr.mine;
+  command('thub.reserve', (value?: unknown) => reserveFlow(mgr, treeItemName(value)));
+  command('thub.extend', async (value?: unknown) => {
+    const client = selectedClient(value);
+    await mgr.extend(60, client);
+    const mine = mgr.findMine(client);
     if (mine?.reservation){
       void vscode.window.showInformationMessage(`thub: ${mine.name} is yours for ${formatLeft(msUntil(mine.reservation.until))} more`);
     }
   });
-  command('thub.release', async () => {
-    const name = mgr.mine?.name || mgr.session?.client;
+  command('thub.release', async (value?: unknown) => {
+    const client = selectedClient(value),
+      name = client || mgr.mine?.name || mgr.session?.client;
     if (!name){
       return;
     }
     const ok = await vscode.window.showWarningMessage(`Release ${name}? Its terminals, camera and debug session close.`, { modal: true }, 'Release');
     if (ok){
-      await mgr.release();
+      await mgr.release(name);
     }
   });
-  command('thub.connect', async () => {
-    const session = await mgr.connect();
+  command('thub.connect', async (value?: unknown) => {
+    const session = await mgr.connect(selectedClient(value));
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `thub: connecting to ${session.client}` },
       () => session.whenUp());
   });
-  command('thub.flash', async () => {
+  command('thub.flash', async (value?: unknown) => {
     const cfg = settings.flashAfterBuild(mainFolder());
-    await flasher.flash({ verify: cfg.verify, then: 'run', target: cfg.target || undefined });
+    await flasher.flash({ verify: cfg.verify, then: 'run', target: cfg.target || undefined, client: selectedClient(value) });
   });
   command('thub.buildAndFlash', () => fab.buildAndFlash());
   command('thub.configureFlashAfterBuild', () => FlashSettingsPanel.show(fab, mgr));
   command('thub.toggleFlashAfterBuild', () => fab.toggle());
-  command('thub.debug', async () => {
+  command('thub.debug', async (value?: unknown) => {
     const folder = mainFolder();
-    await vscode.debug.startDebugging(folder, { ...DEFAULT_LAUNCH, executable: settings.flashAfterBuild(folder).image });
+    await vscode.debug.startDebugging(folder, {
+      ...DEFAULT_LAUNCH, executable: settings.flashAfterBuild(folder).image, thubClient: selectedClient(value)
+    });
   });
   command('thub.reattachDebugger', () => debugTracker.reattach());
-  command('thub.openSerial', async (index?: number) => {
-    const session = await mgr.ensureUp('The serial port'),
+  command('thub.openSerial', async (value?: unknown, client?: string) => {
+    const session = await mgr.ensureUp('The serial port', undefined, selectedClient(value, client)),
       uarts = session.ready?.ports.filter((p) => p.kind === 'uart') || [];
     if (!uarts.length){
       throw new Error(`${session.client} has no UARTs`);
     }
-    let n = typeof index === 'number' ? index : undefined;
+    let n = treeItemIndex(value);
     if (n === undefined){
       n = uarts.length === 1 ? uarts[0].index : (await vscode.window.showQuickPick(
         uarts.map((u) => ({ label: `UART ${u.index}`, description: `${u.label} · ${u.baudRate || 115200} 8N1 · 127.0.0.1:${u.port}`, index: u.index })),
@@ -192,29 +205,31 @@ export function activate(context: vscode.ExtensionContext): void {
       throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
   };
-  command('thub.addRtt', async () => {
+  command('thub.addRtt', async (value?: unknown) => {
     await requireRttFeature();
-    await configureRtt(mgr, rttTerminals);
+    await configureRtt(mgr, rttTerminals, undefined, selectedClient(value));
   });
-  command('thub.configureRtt', async (index?: number) => {
+  command('thub.configureRtt', async (value?: unknown, client?: string) => {
     await requireRttFeature();
-    await configureRtt(mgr, rttTerminals, typeof index === 'number' ? index : undefined);
+    await configureRtt(mgr, rttTerminals, treeItemIndex(value), selectedClient(value, client));
   });
-  command('thub.openRtt', async (index?: number) => {
-    if (!Number.isInteger(index) || !index){
+  command('thub.openRtt', async (value?: unknown, client?: string) => {
+    const index = treeItemIndex(value);
+    if (index === undefined){
       throw new Error('Select an ST-Link RTT reader to open');
     }
     await requireRttFeature();
-    await openRtt(mgr, rttTerminals, index);
+    await openRtt(mgr, rttTerminals, index, selectedClient(value, client));
   });
-  command('thub.removeRtt', async (index?: number) => {
-    if (!Number.isInteger(index) || !index){
+  command('thub.removeRtt', async (value?: unknown, client?: string) => {
+    const index = treeItemIndex(value);
+    if (index === undefined){
       throw new Error('Select an ST-Link RTT reader to remove');
     }
-    await removeRtt(mgr, rttTerminals, index);
+    await removeRtt(mgr, rttTerminals, index, selectedClient(value, client));
   });
-  command('thub.openVideo', async () => {
-    const session = await mgr.ensureUp('The camera');
+  command('thub.openVideo', async (value?: unknown) => {
+    const session = await mgr.ensureUp('The camera', undefined, selectedClient(value));
     if (!session.videoUrl){
       throw new Error(`${session.client} has no camera (runners with one carry the label video-stream)`);
     }
@@ -228,9 +243,9 @@ export function activate(context: vscode.ExtensionContext): void {
       throw new Error('The configured thub CLI does not support `connect --forward`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
   };
-  command('thub.addForward', async () => {
+  command('thub.addForward', async (value?: unknown) => {
     await requireForwardFeature();
-    await addForward(mgr);
+    await addForward(mgr, selectedClient(value));
   });
   const selectedForwardName = (value: unknown): string | undefined => {
     if (typeof value === 'string'){
@@ -247,40 +262,44 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     return undefined;
   };
-  command('thub.updateForward', async (value?: unknown) => {
+  command('thub.updateForward', async (value?: unknown, client?: string) => {
     await requireForwardFeature();
-    const name = selectedForwardName(value);
+    const name = treeItemForwardName(value) || selectedForwardName(value),
+      targetClient = selectedClient(value, client);
     if (typeof name !== 'string'){
       throw new Error('Select a forwarded service to update');
     }
-    await editForward(mgr, name);
+    await editForward(mgr, name, targetClient);
   });
-  command('thub.removeForward', async (value?: unknown) => {
-    const name = selectedForwardName(value);
+  command('thub.removeForward', async (value?: unknown, client?: string) => {
+    const name = treeItemForwardName(value) || selectedForwardName(value),
+      targetClient = selectedClient(value, client);
     if (typeof name !== 'string'){
       throw new Error('Select a forwarded service to remove');
     }
-    await removeForward(mgr, name);
+    await removeForward(mgr, name, targetClient);
   });
-  command('thub.forwardPort', async () => {
+  command('thub.forwardPort', async (value?: unknown) => {
     await requireForwardFeature();
-    await addForward(mgr);
+    await addForward(mgr, selectedClient(value));
   });
-  command('thub.openForward', async (value?: unknown) => {
-    const name = selectedForwardName(value);
+  command('thub.openForward', async (value?: unknown, client?: string) => {
+    const name = treeItemForwardName(value) || selectedForwardName(value),
+      targetClient = selectedClient(value, client);
     if (typeof name !== 'string'){
       throw new Error('Select a forwarded service to open');
     }
-    const session = await mgr.ensureUp('The forwarded service'),
+    const session = await mgr.ensureUp('The forwarded service', undefined, targetClient),
       service = session.ready?.forwards?.find((f) => f.name === name);
     if (!service){
       throw new Error(`${name} is not available on ${session.client}`);
     }
     await ServicePanel.show(session, service);
   });
-  command('thub.copyForward', async (value?: unknown) => {
-    const name = selectedForwardName(value),
-      service = mgr.session?.ready?.forwards?.find((f) => f.name === name);
+  command('thub.copyForward', async (value?: unknown, client?: string) => {
+    const name = treeItemForwardName(value) || selectedForwardName(value),
+      targetClient = selectedClient(value, client),
+      service = mgr.getSession(targetClient || '')?.ready?.forwards?.find((f) => f.name === name);
     if (!service){
       throw new Error('Select an available forwarded service to copy');
     }
@@ -288,11 +307,13 @@ export function activate(context: vscode.ExtensionContext): void {
     await vscode.env.clipboard.writeText(uri.toString());
     void vscode.window.setStatusBarMessage(`thub: copied ${name}`, 3000);
   });
-  command('thub.copyEndpoint', async (node?: { address?: string }) => {
-    if (node?.address){
-      await vscode.env.clipboard.writeText(node.address);
-      void vscode.window.setStatusBarMessage(`thub: copied ${node.address}`, 3000);
+  command('thub.copyEndpoint', async (node?: unknown) => {
+    const address = treeItemAddress(node);
+    if (!address){
+      throw new Error('Select an endpoint to copy');
     }
+    await vscode.env.clipboard.writeText(address);
+    void vscode.window.setStatusBarMessage(`thub: copied ${address}`, 3000);
   });
 
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((e) => {

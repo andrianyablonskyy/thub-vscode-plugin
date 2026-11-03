@@ -258,7 +258,7 @@
       "view/title": [
         {
           "command": "thub.reserve",
-          "when": "view == thub.boards && thub.signedIn && !thub.hasSession",
+          "when": "view == thub.boards && thub.signedIn",
           "group": "navigation@1"
         },
         {
@@ -275,7 +275,7 @@
         },
         {
           "command": "thub.connect",
-          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?)$/ && !thub.connected",
+          "when": "view == thub.boards && viewItem =~ /^(board\\.mine|session(\\.gdb)?)$/",
           "group": "inline@1"
         },
         {

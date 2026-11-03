@@ -33,7 +33,7 @@ export class ThubDebugProvider implements vscode.DebugConfigurationProvider {
     }
     let session: Session;
     try {
-      session = await this.mgr.ensureUp('Debugging', config.target);
+      session = await this.mgr.ensureUp('Debugging', config.target, typeof config.thubClient === 'string' ? config.thubClient : undefined);
     }
     catch (err){
       void vscode.window.showErrorMessage(`thub: ${(err as Error).message}`);
@@ -80,21 +80,34 @@ export function toCortexDebug(config: vscode.DebugConfiguration, session: Sessio
 /** Tracks thub debug sessions: context key, and reattaching after a link drop. */
 export class DebugTracker implements vscode.Disposable {
   private readonly subs: vscode.Disposable[] = [];
-  active?: vscode.DebugSession;
+  private readonly sessions = new Map<string, vscode.DebugSession>();
+
+  get active(): vscode.DebugSession | undefined {
+    return [...this.sessions.values()].at(-1);
+  }
+
+  isDebugging(reservationId: string | undefined): boolean {
+    return reservationId ? this.sessions.has(reservationId) : false;
+  }
+
+  debugSession(reservationId: string): vscode.DebugSession | undefined {
+    return this.sessions.get(reservationId);
+  }
 
   constructor(private readonly onChange: () => void){
     this.subs.push(
       vscode.debug.onDidStartDebugSession((s) => {
         if (s.configuration.thubReservation){
-          this.active = s;
+          this.sessions.set(s.configuration.thubReservation, s);
           void vscode.commands.executeCommand('setContext', 'thub.debugging', true);
           this.onChange();
         }
       }),
       vscode.debug.onDidTerminateDebugSession((s) => {
-        if (s === this.active){
-          this.active = undefined;
-          void vscode.commands.executeCommand('setContext', 'thub.debugging', false);
+        const reservation = s.configuration.thubReservation;
+        if (reservation && this.sessions.get(reservation) === s){
+          this.sessions.delete(reservation);
+          void vscode.commands.executeCommand('setContext', 'thub.debugging', this.sessions.size > 0);
           this.onChange();
         }
       })
@@ -103,26 +116,27 @@ export class DebugTracker implements vscode.Disposable {
 
   /** The link came back: the debugger has to reattach (it can't survive a drop). */
   async offerReattach(session: Session): Promise<void> {
-    const s = this.active;
-    if (!s || s.configuration.thubReservation !== session.reservationId){
+    const s = this.sessions.get(session.reservationId);
+    if (!s){
       return;
     }
     const pick = await vscode.window.showInformationMessage(
       `Link to ${session.client} came back. Serial stayed connected. The debug session has to reattach.`, 'Reattach debugger');
     if (pick){
-      await this.reattach();
+        await this.reattach(s);
     }
   }
 
-  async reattach(): Promise<void> {
-    const s = this.active,
+  async reattach(session?: vscode.DebugSession): Promise<void> {
+      const s = session || this.active,
       executable = s?.configuration.thubExecutable;
     if (s){
       await vscode.debug.stopDebugging(s);
     }
     await vscode.debug.startDebugging(s?.workspaceFolder, {
       type: 'thub', request: 'attach', name: `thub: Attach (${s?.configuration.thubClient || 'reserved board'})`,
-      executable: executable || '${workspaceFolder}/build/${workspaceFolderBasename}.elf'
+      executable: executable || '${workspaceFolder}/build/${workspaceFolderBasename}.elf',
+      thubClient: s?.configuration.thubClient
     });
   }
 

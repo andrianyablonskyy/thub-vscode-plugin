@@ -27,7 +27,8 @@ export class StatusBar implements vscode.Disposable {
   }
 
   update(): void {
-    const mine = this.mgr.mine,
+    const held = this.mgr.mines,
+      mine = this.mgr.mine,
       s = this.mgr.session;
     if (!this.mgr.signedIn){
       this.main.text = '$(plug) thub: Sign in';
@@ -48,18 +49,20 @@ export class StatusBar implements vscode.Disposable {
     }
     const leftMs = msUntil(mine.reservation?.until),
       expiring = leftMs < 10 * 60_000,
-      debugging = this.debug.active?.configuration.thubReservation === mine.reservation?.id;
+      debugging = this.debug.isDebugging(mine.reservation?.id),
+      others = held.length > 1 ? ` · +${held.length - 1} locked` : '';
     if (s && (s.link === 'reconnecting' || s.link === 'starting' || s.link === 'waiting')){
-      this.main.text = `$(sync~spin) ${mine.name} · ${s.link === 'reconnecting' ? 'reconnecting' : 'connecting'}`;
+      this.main.text = `$(sync~spin) ${mine.name} · ${s.link === 'reconnecting' ? 'reconnecting' : 'connecting'}${others}`;
     }
     else if (debugging){
-      this.main.text = `$(debug-alt) Debugging on ${mine.name} · ${formatLeft(leftMs)} left`;
+      this.main.text = `$(debug-alt) Debugging on ${mine.name} · ${formatLeft(leftMs)} left${others}`;
     }
     else {
-      this.main.text = `$(lock) ${mine.name} · ${expiring ? `${formatLeft(leftMs)} left` : formatLeft(leftMs)}`;
+      this.main.text = `$(lock) ${mine.name} · ${expiring ? `${formatLeft(leftMs)} left` : formatLeft(leftMs)}${others}`;
     }
-    this.main.tooltip = new vscode.MarkdownString(`**${mine.name}** reserved until ${new Date(mine.reservation!.until).toLocaleTimeString()}` +
-      (expiring ? '\n\n[Extend 1h](command:thub.extend)' : ''));
+    this.main.tooltip = new vscode.MarkdownString(held.map((resource) =>
+      `**${resource.name}** (${resource.type === 'hw' ? 'HIL' : 'SIL'}) reserved until ${new Date(resource.reservation!.until).toLocaleTimeString()}`
+    ).join('\n\n') + (expiring ? `\n\n[Extend 1h](command:thub.extend)` : ''));
     this.main.tooltip.isTrusted = { enabledCommands: ['thub.extend'] };
     this.main.command = expiring ? 'thub.extend' : s ? { command: 'workbench.view.extension.thub', title: 'Show thub' } : 'thub.connect';
     this.main.backgroundColor = new vscode.ThemeColor(expiring ? 'statusBarItem.errorBackground' : 'statusBarItem.warningBackground');

@@ -22,6 +22,8 @@ suite('video and ports', () => {
   test('a block of free local ports, past taken ones', async () => {
     const taken = new Set([5001, 5006]);
     assert.equal(await freeBlock(5001, 4, 10, async (p) => !taken.has(p)), 5009);
+    const activeSessionPorts = new Set([5001, 5002, 5003, 5004]);
+    assert.equal(await freeBlock(5001, 4, 10, async (p) => !activeSessionPorts.has(p)), 5005);
     assert.equal(await freeBlock(3333, 2, 10, async () => true), 3333);
     await assert.rejects(freeBlock(5001, 4, 2, async () => false), /No 4 free local ports/);
   });

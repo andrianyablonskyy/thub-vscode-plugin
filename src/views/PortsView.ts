@@ -68,68 +68,69 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
   }
 
   private rows(): Row[] {
-    const s = this.mgr.session,
-      ready = s?.ready;
-    if (!s || !ready){
-      return [];
-    }
     const rows: Row[] = [];
-    for (const p of ready.ports){
-      const addr = `127.0.0.1:${p.port}`;
-      if (p.kind === 'uart'){
-        const n = SerialTerminal.open.get(`${s.client}:uart${p.index}`) || 0;
+    for (const s of this.mgr.activeSessions){
+      const ready = s.ready;
+      if (!ready){
+        continue;
+      }
+      for (const p of ready.ports){
+        const addr = `127.0.0.1:${p.port}`;
+        if (p.kind === 'uart'){
+          const n = SerialTerminal.open.get(`${s.client}:uart${p.index}`) || 0;
+          rows.push({
+            icon: 'terminal', name: `${s.client} · UART ${p.index}`, remote: `${p.label} · ${p.baudRate || 115200} 8N1`, local: addr,
+            status: n ? { text: `${n} client${n === 1 ? '' : 's'}`, tone: 'ok' } : { text: 'idle', tone: 'idle' },
+            actions: [{ label: 'Open terminal', msg: { type: 'serial', index: p.index, client: s.client }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` } }]
+          });
+        }
+        else if (p.kind === 'rtt'){
+          rows.push({
+            icon: 'terminal', name: `${s.client} · RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`,
+            remote: `OpenOCD RTT up-channel · ${p.label}`, local: addr,
+            status: s.isUp ? { text: 'reading available', tone: 'ok' } : { text: s.link, tone: 'idle' },
+            actions: [
+              { label: 'Open logs', msg: { type: 'command', command: 'thub.openRtt', index: p.index, client: s.client }, primary: true, icon: 'open' },
+              { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` }, icon: 'copy' },
+              { label: 'Configure', msg: { type: 'command', command: 'thub.configureRtt', index: p.index, client: s.client }, icon: 'edit' },
+              { label: 'Remove', msg: { type: 'command', command: 'thub.removeRtt', index: p.index, client: s.client }, icon: 'remove' }
+            ]
+          });
+        }
+        else {
+          const debugging = this.debug.isDebugging(s.reservationId);
+          rows.push({
+            icon: 'bug', name: `${s.client} · GDB · ST-Link ${p.index}`, remote: `OpenOCD · ${p.target || s.target || 'runner card\'s target'}`, local: addr,
+            status: debugging ? { text: 'debugging', tone: 'ok' } : { text: 'idle', tone: 'idle' },
+            actions: [
+              { label: 'Debug', msg: { type: 'command', command: 'thub.debug', client: s.client }, primary: true },
+              { label: 'Flash', msg: { type: 'command', command: 'thub.flash', client: s.client }, primary: true },
+              { label: 'Copy', msg: { type: 'copy', text: addr } }
+            ]
+          });
+        }
+      }
+      if (ready.video){
+        const v = s.video,
+          streaming = v ? v.streaming : true;
         rows.push({
-          icon: 'terminal', name: `UART ${p.index}`, remote: `${p.label} · ${p.baudRate || 115200} 8N1`, local: addr,
-          status: n ? { text: `${n} client${n === 1 ? '' : 's'}`, tone: 'ok' } : { text: 'idle', tone: 'idle' },
-          actions: [{ label: 'Open terminal', msg: { type: 'serial', index: p.index }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` } }]
+          icon: 'camera', name: `${s.client} · Camera`, remote: `video-stream · MPEG-TS`, local: ready.video.url.replace(/^http:\/\//, ''),
+          status: streaming ? { text: 'streaming', tone: 'ok' } : { text: v?.error ? `not streaming — ${v.error}` : 'starting…', tone: v?.error ? 'err' : 'idle' },
+          actions: [{ label: 'Open', msg: { type: 'command', command: 'thub.openVideo', client: s.client }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: ready.video.url } }]
         });
       }
-      else if (p.kind === 'rtt'){
+      for (const service of ready.forwards || []){
         rows.push({
-          icon: 'terminal', name: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`,
-          remote: `OpenOCD RTT up-channel · ${p.label}`, local: addr,
-          status: s.isUp ? { text: 'reading available', tone: 'ok' } : { text: s.link, tone: 'idle' },
+          icon: 'arrow', name: `${s.client} · ${service.name}`, remote: `localhost:${service.clientPort}`, local: `127.0.0.1:${service.port}`,
+          status: s.isUp ? { text: 'forwarding', tone: 'ok' } : { text: s.link, tone: 'idle' },
           actions: [
-            { label: 'Open logs', msg: { type: 'command', command: 'thub.openRtt', index: p.index }, primary: true, icon: 'open' },
-            { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` }, icon: 'copy' },
-            { label: 'Configure', msg: { type: 'command', command: 'thub.configureRtt', index: p.index }, icon: 'edit' },
-            { label: 'Remove', msg: { type: 'command', command: 'thub.removeRtt', index: p.index }, icon: 'remove' }
+            { label: 'Open', msg: { type: 'command', command: 'thub.openForward', name: service.name, client: s.client }, primary: true, icon: 'open' },
+            { label: 'Copy', msg: { type: 'command', command: 'thub.copyForward', name: service.name, client: s.client }, icon: 'copy' },
+            { label: 'Update', msg: { type: 'command', command: 'thub.updateForward', name: service.name, client: s.client }, icon: 'edit' },
+            { label: 'Remove', msg: { type: 'command', command: 'thub.removeForward', name: service.name, client: s.client }, icon: 'remove' }
           ]
         });
       }
-      else {
-        const debugging = this.debug.active?.configuration.thubReservation === s.reservationId;
-        rows.push({
-          icon: 'bug', name: `GDB · ST-Link ${p.index}`, remote: `OpenOCD · ${p.target || s.target || 'runner card\'s target'}`, local: addr,
-          status: debugging ? { text: 'debugging', tone: 'ok' } : { text: 'idle', tone: 'idle' },
-          actions: [
-            { label: 'Debug', msg: { type: 'command', command: 'thub.debug' }, primary: true },
-            { label: 'Flash', msg: { type: 'command', command: 'thub.flash' }, primary: true },
-            { label: 'Copy', msg: { type: 'copy', text: addr } }
-          ]
-        });
-      }
-    }
-    if (ready.video){
-      const v = s.video,
-        streaming = v ? v.streaming : true;
-      rows.push({
-        icon: 'camera', name: 'Camera', remote: `video-stream · MPEG-TS`, local: ready.video.url.replace(/^http:\/\//, ''),
-        status: streaming ? { text: 'streaming', tone: 'ok' } : { text: v?.error ? `not streaming — ${v.error}` : 'starting…', tone: v?.error ? 'err' : 'idle' },
-        actions: [{ label: 'Open', msg: { type: 'command', command: 'thub.openVideo' }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: ready.video.url } }]
-      });
-    }
-    for (const service of ready.forwards || []){
-      rows.push({
-        icon: 'arrow', name: service.name, remote: `localhost:${service.clientPort}`, local: `127.0.0.1:${service.port}`,
-        status: s.isUp ? { text: 'forwarding', tone: 'ok' } : { text: s.link, tone: 'idle' },
-        actions: [
-          { label: 'Open', msg: { type: 'command', command: 'thub.openForward', name: service.name }, primary: true, icon: 'open' },
-          { label: 'Copy', msg: { type: 'command', command: 'thub.copyForward', name: service.name }, icon: 'copy' },
-          { label: 'Update', msg: { type: 'command', command: 'thub.updateForward', name: service.name }, icon: 'edit' },
-          { label: 'Remove', msg: { type: 'command', command: 'thub.removeForward', name: service.name }, icon: 'remove' }
-        ]
-      });
     }
     return rows;
   }
@@ -143,7 +144,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
     if (!view){
       return;
     }
-    const s = this.mgr.session,
+    const sessions = this.mgr.activeSessions,
       f = await this.features();
     if (this.view !== view){
       return;
@@ -151,13 +152,15 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
     try {
       await view.webview.postMessage({
         type: 'state',
-        header: s ? `${s.client} · ${linkText(s.link)}` : '',
-        hasSession: Boolean(s),
-        hasReservation: Boolean(this.mgr.mine),
+        header: sessions.map((s) => `${s.client} · ${linkText(s.link)}`).join('  |  '),
+        hasSession: sessions.length > 0,
+        hasReservation: this.mgr.mines.length > 0,
         rows: this.rows(),
         canForward: f.connectForward,
-        canRtt: f.connectRtt && Boolean(s?.ready?.ports.some((port) => port.kind === 'swd')),
-        rttFeature: f.connectRtt
+        canRtt: f.connectRtt && sessions.some((s) => s.ready?.ports.some((port) => port.kind === 'swd')),
+        rttFeature: f.connectRtt,
+        client: this.mgr.mine?.name,
+        rttClient: sessions.find((s) => s.ready?.ports.some((port) => port.kind === 'swd'))?.client
       });
     }
     catch (err){
@@ -168,19 +171,19 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
     }
   }
 
-  private async onMessage(m: { type: string; index?: number; text?: string; command?: string; name?: string }): Promise<void> {
+  private async onMessage(m: { type: string; index?: number; text?: string; command?: string; name?: string; client?: string }): Promise<void> {
     if (m.type === 'ready'){
       return this.post();
     }
     if (m.type === 'serial'){
-      await vscode.commands.executeCommand('thub.openSerial', m.index);
+      await vscode.commands.executeCommand('thub.openSerial', m.index, m.client);
     }
     else if (m.type === 'copy' && m.text){
       await vscode.env.clipboard.writeText(m.text);
       void vscode.window.setStatusBarMessage(`thub: copied ${m.text}`, 3000);
     }
     else if (m.type === 'command' && m.command?.startsWith('thub.')){
-      await vscode.commands.executeCommand(m.command, m.index ?? m.name);
+      await vscode.commands.executeCommand(m.command, m.index ?? m.name ?? m.client, m.client);
     }
   }
 
@@ -226,8 +229,8 @@ window.addEventListener('message', ({ data }) => {
     : 'No board reserved. <button class="link" id="reserve">Reserve a board</button>';
   $('#connect')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.connect' }));
   $('#reserve')?.addEventListener('click', () => vscode.postMessage({ type: 'command', command: 'thub.reserve' }));
-  $('#addForward').onclick = () => vscode.postMessage({ type: 'command', command: 'thub.addForward' });
-  $('#addRtt').onclick = () => vscode.postMessage({ type: 'command', command: 'thub.addRtt' });
+  $('#addForward').onclick = () => vscode.postMessage({ type: 'command', command: 'thub.addForward', client: data.client });
+  $('#addRtt').onclick = () => vscode.postMessage({ type: 'command', command: 'thub.addRtt', client: data.rttClient });
   $('#rows').innerHTML = data.rows.map((r, i) => '<tr><td>' + ICON[r.icon] + ' ' + esc(r.name) + '</td><td class="remote">' + esc(r.remote) +
     '</td><td class="local">' + esc(r.local) + '</td><td class="tone-' + r.status.tone + '"><span class="dot ' + (r.status.tone === 'ok' ? 'ok' : r.status.tone === 'err' ? 'err' : 'idle') + '"></span>' +
     esc(r.status.text) + '</td><td class="right">' + r.actions.map((a, j) => '<button class="act' + (a.icon ? ' icon' : '') + (a.primary ? ' primary' : '') + '" title="' + esc(a.label) +

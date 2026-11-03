@@ -14,10 +14,10 @@ const accent = new vscode.ThemeColor('thub.accent'),
   muted = new vscode.ThemeColor('descriptionForeground');
 
 type Node =
-  | { kind: 'section'; id: 'session' | 'boards' | 'jobs' }
+  | { kind: 'section'; id: 'session' | 'boards' | 'jobs'; resource?: Resource }
   | { kind: 'sessionHeader'; board: Resource }
-  | { kind: 'endpoint'; label: string; context: string; command?: vscode.Command }
-  | { kind: 'forward'; service: ConnectForward }
+  | { kind: 'endpoint'; label: string; context: string; client: string; index?: number; address?: string; command?: vscode.Command }
+  | { kind: 'forward'; service: ConnectForward; client: string }
   | { kind: 'action'; label: string; icon: string; command: vscode.Command; primary?: boolean }
   | { kind: 'board'; board: Resource }
   | { kind: 'job'; job: Job }
@@ -39,7 +39,7 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
           : [];
       }
       return [
-        ...(this.mgr.mine ? [{ kind: 'section', id: 'session' } as Node] : []),
+        ...this.mgr.mines.map((resource) => ({ kind: 'section', id: 'session', resource }) as Node),
         { kind: 'section', id: 'boards' },
         { kind: 'section', id: 'jobs' }
       ];
@@ -48,7 +48,7 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       return [];
     }
     if (node.id === 'session'){
-      return this.sessionChildren();
+      return this.sessionChildren(node.resource!);
     }
     if (node.id === 'boards'){
       return this.mgr.resources.length
@@ -60,54 +60,62 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       : [{ kind: 'message', text: 'No jobs of yours yet' }];
   }
 
-  private sessionChildren(): Node[] {
-    const board = this.mgr.mine!,
-      s = this.mgr.session,
+  private sessionChildren(board: Resource): Node[] {
+    const s = this.mgr.getSession(board.name),
       nodes: Node[] = [{ kind: 'sessionHeader', board }];
     if (s?.ready){
       for (const p of s.ready.ports){
         nodes.push(p.kind === 'uart'
-          ? { kind: 'endpoint', label: `UART ${p.index}`, context: 'endpoint.uart', command: { command: 'thub.openSerial', title: 'Open serial', arguments: [p.index] } }
+          ? { kind: 'endpoint', label: `UART ${p.index}`, context: 'endpoint.uart', client: board.name, index: p.index, address: `${p.host}:${p.port}`,
+            command: { command: 'thub.openSerial', title: 'Open serial', arguments: [p.index, board.name] } }
           : p.kind === 'swd'
-            ? { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, context: 'endpoint.gdb' }
-            : { kind: 'endpoint', label: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`, context: 'endpoint.rtt',
-              command: { command: 'thub.openRtt', title: 'Open RTT logs', arguments: [p.index] } });
+            ? { kind: 'endpoint', label: `GDB · ST-Link ${p.index}`, context: 'endpoint.gdb', client: board.name, address: `${p.host}:${p.port}` }
+            : { kind: 'endpoint', label: `RTT · ST-Link ${p.index} · CH ${p.channel ?? 0}`, context: 'endpoint.rtt', client: board.name, index: p.index, address: `${p.host}:${p.port}`,
+              command: { command: 'thub.openRtt', title: 'Open RTT logs', arguments: [p.index, board.name] } });
       }
       if (s.ready.video){
-        nodes.push({ kind: 'endpoint', label: 'Video', context: 'endpoint.video', command: { command: 'thub.openVideo', title: 'Open camera' } });
+        nodes.push({ kind: 'endpoint', label: 'Video', context: 'endpoint.video', client: board.name, address: s.ready.video.url,
+          command: { command: 'thub.openVideo', title: 'Open camera', arguments: [board.name] } });
       }
       for (const service of s.ready.forwards || []){
-        nodes.push({ kind: 'forward', service });
+        nodes.push({ kind: 'forward', service, client: board.name });
       }
       nodes.push(
-        { kind: 'action', label: 'Flash', icon: 'arrow-up', command: { command: 'thub.flash', title: 'Flash' }, primary: true },
-        { kind: 'action', label: 'Debug', icon: 'debug-alt', command: { command: 'thub.debug', title: 'Debug' } }
+        { kind: 'action', label: 'Flash', icon: 'arrow-up', command: { command: 'thub.flash', title: 'Flash', arguments: [board.name] }, primary: true },
+        { kind: 'action', label: 'Debug', icon: 'debug-alt', command: { command: 'thub.debug', title: 'Debug', arguments: [board.name] } }
       );
     }
-    else if (!s){
-      nodes.push({ kind: 'action', label: 'Connect (UART, GDB, camera)', icon: 'plug', command: { command: 'thub.connect', title: 'Connect' }, primary: true });
+    else {
+      nodes.push({ kind: 'action', label: 'Connect (UART, GDB, camera)', icon: 'plug',
+        command: { command: 'thub.connect', title: 'Connect', arguments: [board.name] }, primary: true });
     }
-    nodes.push({ kind: 'action', label: 'Release board', icon: 'unlock', command: { command: 'thub.release', title: 'Release' } });
+    nodes.push({ kind: 'action', label: 'Release board', icon: 'unlock',
+      command: { command: 'thub.release', title: 'Release', arguments: [board.name] } });
     return nodes;
   }
 
   getTreeItem(node: Node): vscode.TreeItem {
     switch (node.kind){
       case 'section': {
-        const label = node.id === 'session' ? 'My session'
+        const label = node.resource ? `My ${node.resource.type === 'hw' ? 'HIL' : 'SIL'}`
+            : node.id === 'session' ? 'My session'
             : node.id === 'boards' ? 'Boards' : 'Recent jobs',
           item = new vscode.TreeItem(label, node.id === 'jobs' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded);
         item.id = `section:${node.id}`;
+        if (node.resource){
+          item.id = `session:${node.resource.id}`;
+          item.description = node.resource.name;
+        }
         if (node.id === 'boards' && this.mgr.me?.group){
           item.description = `group: ${this.mgr.me.group}`;
         }
         return item;
       }
       case 'sessionHeader': {
-        const s = this.mgr.session,
+        const s = this.mgr.getSession(node.board.name),
           left = msUntil(node.board.reservation?.until),
           item = new vscode.TreeItem(node.board.name);
-        item.id = 'session:header';
+        item.id = `session-header:${node.board.id}`;
         item.contextValue = s?.ready?.ports.some((p) => p.kind === 'swd') ? 'session.gdb' : 'session';
         item.description = `${formatLeft(left)} · ${s ? linkText(s.link) : 'not connected'}`;
         item.iconPath = new vscode.ThemeIcon(s && s.link !== 'up' && s.link !== 'ended' ? 'sync~spin' : 'lock', left < 10 * 60_000 ? error : accent);
@@ -119,7 +127,10 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
         return item;
       }
       case 'endpoint': {
-        const item = new vscode.TreeItem(node.label);
+        const item = new vscode.TreeItem(node.label),
+          encodedAddress = encodeURIComponent(node.address || ''),
+          encodedClient = encodeURIComponent(node.client);
+        item.id = `endpoint:${encodedClient}:${node.index ?? ''}:${encodedAddress}`;
         item.contextValue = node.context;
         item.iconPath = new vscode.ThemeIcon(node.context === 'endpoint.uart' || node.context === 'endpoint.rtt'
           ? 'terminal' : node.context === 'endpoint.gdb' ? 'debug' : 'device-camera-video');
@@ -131,10 +142,11 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
         const { service } = node,
           label = `${service.name} [${service.clientPort}]`,
           item = new vscode.TreeItem(label);
+        item.id = `forward:${encodeURIComponent(node.client)}:${encodeURIComponent(service.name)}`;
         item.contextValue = 'endpoint.forward';
         item.iconPath = new vscode.ThemeIcon('globe');
         item.tooltip = label;
-        item.command = { command: 'thub.openForward', title: 'Open forwarded service', arguments: [service.name] };
+        item.command = { command: 'thub.openForward', title: 'Open forwarded service', arguments: [service.name, node.client] };
         return item;
       }
       case 'action': {
@@ -166,7 +178,8 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
 
   private boardItem(r: Resource): vscode.TreeItem {
     const state: BoardState = boardState(r),
-      connecting = state === 'mine' && this.mgr.session && this.mgr.session.link !== 'up',
+      session = state === 'mine' ? this.mgr.getSession(r.name) : undefined,
+      connecting = Boolean(session && session.link !== 'up'),
       item = new vscode.TreeItem(r.name),
       left = formatLeft(msUntil(r.reservation?.until)),
       summary = labelsSummary(r);
@@ -188,7 +201,7 @@ export class BoardsTree implements vscode.TreeDataProvider<Node> {
       r.labels.length ? `Labels: ${r.labels.map((x) => `\`${x}\``).join(', ')}` : '',
       state === 'idle' ? '_Click to reserve_' : ''
     ].filter(Boolean).join('\n\n'));
-    if (state === 'idle' && r.type === 'hw'){
+    if (state === 'idle'){
       item.command = { command: 'thub.reserve', title: 'Reserve', arguments: [r.name] };
     }
     return item;

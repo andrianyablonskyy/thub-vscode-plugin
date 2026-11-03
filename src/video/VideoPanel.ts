@@ -66,7 +66,7 @@ export class VideoPanel implements vscode.Disposable {
     if (this.disposed){
       return;
     }
-    const power = await this.power.availability();
+    const power = await this.power.availability(this.session.client);
     await this.panel.webview.postMessage({
       type: 'state',
       mode: this.mode,
@@ -103,7 +103,7 @@ export class VideoPanel implements vscode.Disposable {
         await this.snapshot();
         break;
       case 'power':
-        await this.power.run(m.action || 'reset', { port: m.port || undefined, delaySec: m.delay });
+        await this.power.run(m.action || 'reset', { port: m.port || undefined, delaySec: m.delay, client: this.session.client });
         await this.post();
         break;
       default:

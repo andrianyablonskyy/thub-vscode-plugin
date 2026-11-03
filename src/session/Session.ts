@@ -8,7 +8,7 @@ import type { ChildProcess } from 'node:child_process';
 import type { ThubCli } from '../cli/ThubCli';
 import { parseConnectLine } from '../cli/parse';
 import type { ConnectReady, ForwardConfig, Resource, RttConfig } from '../cli/types';
-import { freeBlock } from '../util/ports';
+import { freeBlock, isFree } from '../util/ports';
 import { settings } from '../util/config';
 
 export type LinkState = 'starting' | 'waiting' | 'up' | 'reconnecting' | 'ended';
@@ -97,14 +97,32 @@ export class Session implements vscode.Disposable {
     return d;
   }
 
-  async start(): Promise<void> {
+  async start(reservedPorts: Set<number>): Promise<void> {
     const base = settings.ports();
-    this.ports = {
-      uart: await freeBlock(base.uart, 4),
-      gdb: await freeBlock(base.gdb, 2),
-      video: await freeBlock(base.video, 1)
-    };
-    await this.spawn();
+    const allocated = new Set(reservedPorts),
+      newlyAllocated: number[] = [],
+      free = async (port: number) => !allocated.has(port) && isFree(port),
+      reserve = (start: number, size: number) => {
+        for (let i = 0; i < size; i++){
+          allocated.add(start + i);
+          newlyAllocated.push(start + i);
+        }
+      };
+    try {
+      const uart = await freeBlock(base.uart, 4, 50, free);
+      reserve(uart, 4);
+      const gdb = await freeBlock(base.gdb, 2, 50, free);
+      reserve(gdb, 2);
+      const video = await freeBlock(base.video, 1, 50, free);
+      reserve(video, 1);
+      this.ports = { uart, gdb, video };
+      newlyAllocated.forEach((port) => reservedPorts.add(port));
+      await this.spawn();
+    }
+    catch (err){
+      newlyAllocated.forEach((port) => reservedPorts.delete(port));
+      throw err;
+    }
   }
 
   updateForwards(forwards: ForwardConfig[]): void {

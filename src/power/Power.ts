@@ -17,8 +17,8 @@ export class Power {
   constructor(private readonly cli: ThubCli, private readonly mgr: SessionManager){}
 
   /** Whether power can be switched now, and through which job. */
-  async availability(): Promise<PowerAvailability> {
-    const board = this.mgr.mine;
+  async availability(client?: string): Promise<PowerAvailability> {
+    const board = this.mgr.findMine(client);
     if (!board){
       return { ok: false, why: 'Reserve a board first.' };
     }
@@ -35,8 +35,8 @@ export class Power {
   }
 
   /** Switches it, or says why it can't. */
-  async run(action: PowerAction, { port, delaySec }: { port?: number; delaySec?: number } = {}): Promise<boolean> {
-    const a = await this.availability();
+  async run(action: PowerAction, { port, delaySec, client }: { port?: number; delaySec?: number; client?: string } = {}): Promise<boolean> {
+    const a = await this.availability(client);
     if (!a.ok){
       void vscode.window.showWarningMessage(`thub: ${a.why}`);
       return false;

@@ -63,7 +63,8 @@ src/
   cli/types.ts          Resource, Reservation, Job, ConnectInfo
   session/Session.ts    one per reservation: connect process, port map,
                         terminals, video, forwards, expiry timer; Disposable
-  session/SessionManager.ts  current session, events (onDidChange)
+  session/SessionManager.ts  one HIL and one SIL reservation, per-resource
+                             sessions, selection and events (onDidChange)
   views/BoardsTree.ts   TreeDataProvider: My session + Boards (+ Recent jobs)
   views/PortsView.ts    "THUB PORTS" panel (webview view)
   views/StatusBar.ts    countdown + link/UART/GDB indicators

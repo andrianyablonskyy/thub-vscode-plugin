@@ -2,6 +2,7 @@
 // reserved board (setting thub.flashAfterBuild; design: artboard 7).
 
 import * as vscode from 'vscode';
+import type { Resource } from '../cli/types';
 import type { SessionManager } from '../session/SessionManager';
 import type { Flasher, FlashResult } from './Flasher';
 import type { Power } from '../power/Power';
@@ -119,27 +120,30 @@ export class FlashAfterBuild implements vscode.Disposable {
       at: new Date().toISOString(), buildTask, buildMs, flash: null, then: cfg.then, ...r
     } satisfies LastRun).then(() => this.changed.fire());
     try {
-      if (!(await this.boardReady(cfg))){
+      const board = await this.boardReady(cfg);
+      if (!board){
         await record({ error: 'No matching board reserved — skipped' });
         return;
       }
       if (cfg.powerCycle){
-        await this.power.run('reset', { delaySec: 2 });
+        await this.power.run('reset', { delaySec: 2, client: board.name });
       }
       const r: FlashResult = await this.flasher.flash({
         verify: cfg.verify,
         then: cfg.then === 'run' ? 'run' : 'halt',
         skipUnchanged: cfg.skipUnchanged,
-        target: cfg.target || undefined
+        target: cfg.target || undefined,
+        client: board.name
       });
       await record({ flash: { ok: r.ok, skipped: r.skipped, verified: r.verified, summary: r.summary, client: r.client, ms: r.ms } });
-      if (r.ok && cfg.openSerial && this.mgr.session){
-        this.serial.show(this.mgr.session, 1, { clear: true });
+      const session = this.mgr.getSession(board.name);
+      if (r.ok && cfg.openSerial && session){
+        this.serial.show(session, 1, { clear: true });
       }
       if (r.ok && cfg.then === 'debug'){
         await vscode.debug.startDebugging(mainFolder(), {
           type: 'thub', request: 'launch', name: 'thub: Debug on reserved board',
-          executable: await this.flasher.resolveImage(cfg.image), flash: false, runToEntryPoint: 'main'
+          executable: await this.flasher.resolveImage(cfg.image), flash: false, runToEntryPoint: 'main', thubClient: board.name
         });
       }
     }
@@ -167,16 +171,16 @@ export class FlashAfterBuild implements vscode.Disposable {
   }
 
   /** The configured board is mine and connected — or it's found, asked for or skipped. */
-  private async boardReady(cfg: FlashAfterBuildConfig): Promise<boolean> {
+  private async boardReady(cfg: FlashAfterBuildConfig): Promise<Resource | undefined> {
     await this.mgr.refresh();
-    const mine = this.mgr.mine,
+    const mine = this.mgr.mines.find((resource) => resource.type === 'hw'),
       matches = (name: string, labels: string[]) => cfg.board === 'reserved' || cfg.board === name ||
         (cfg.board.startsWith('label:') && labels.includes(cfg.board.slice(6)));
     if (mine && matches(mine.name, mine.labels)){
-      return true;
+      return mine;
     }
     if (cfg.whenNoBoard === 'skip'){
-      return false;
+      return undefined;
     }
     const candidate = this.mgr.resources.find((r) => r.type === 'hw' && boardState(r) === 'idle' && matches(r.name, r.labels));
     if (cfg.whenNoBoard === 'ask'){
@@ -185,18 +189,18 @@ export class FlashAfterBuild implements vscode.Disposable {
         ...(candidate ? [`Reserve ${candidate.name} for 1h`] : []), 'Reserve board…', 'Skip');
       if (pick === 'Reserve board…'){
         await vscode.commands.executeCommand('thub.reserve');
-        return Boolean(this.mgr.mine);
+        return this.mgr.mines.find((resource) => resource.type === 'hw' && matches(resource.name, resource.labels));
       }
       if (!pick || pick === 'Skip' || !candidate){
-        return false;
+        return undefined;
       }
     }
     if (!candidate){
       void vscode.window.showWarningMessage(`Flash after build: no idle board matches "${cfg.board}"`);
-      return false;
+      return undefined;
     }
     await this.mgr.reserve(candidate.name, 60, true);
-    return true;
+    return this.mgr.findMine(candidate.name);
   }
 
   /** thub.buildAndFlash: the configured build task, then a flash. */

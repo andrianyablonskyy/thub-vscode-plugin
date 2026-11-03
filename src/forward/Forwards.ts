@@ -29,27 +29,27 @@ async function promptForward(existing?: ForwardConfig): Promise<ForwardConfig | 
   return { name: name.trim(), clientPort: Number(port) };
 }
 
-export async function addForward(mgr: SessionManager): Promise<void> {
+export async function addForward(mgr: SessionManager, client?: string): Promise<void> {
   const service = await promptForward();
   if (service){
-    await mgr.setForwardServices([...mgr.forwardServices, service]);
+    await mgr.setForwardServices([...mgr.getForwardServices(client), service], client);
   }
 }
 
-export async function editForward(mgr: SessionManager, name: string): Promise<void> {
-  const services = mgr.forwardServices,
+export async function editForward(mgr: SessionManager, name: string, client?: string): Promise<void> {
+  const services = mgr.getForwardServices(client),
     current = services.find((service) => service.name === name);
   if (!current){
     throw new Error(`Forwarded service "${name}" was not found`);
   }
   const updated = await promptForward(current);
   if (updated){
-    await mgr.setForwardServices(services.map((service) => service === current ? updated : service));
+    await mgr.setForwardServices(services.map((service) => service === current ? updated : service), client);
   }
 }
 
-export async function removeForward(mgr: SessionManager, name: string): Promise<void> {
-  const services = mgr.forwardServices;
+export async function removeForward(mgr: SessionManager, name: string, client?: string): Promise<void> {
+  const services = mgr.getForwardServices(client);
   if (!services.some((service) => service.name === name)){
     throw new Error(`Forwarded service "${name}" was not found`);
   }
@@ -59,6 +59,6 @@ export async function removeForward(mgr: SessionManager, name: string): Promise<
     'Remove'
   );
   if (answer === 'Remove'){
-    await mgr.setForwardServices(services.filter((service) => service.name !== name));
+    await mgr.setForwardServices(services.filter((service) => service.name !== name), client);
   }
 }

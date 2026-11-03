@@ -67,32 +67,32 @@ async function waitForRestart(mgr: SessionManager, session: Awaited<ReturnType<S
   }
 }
 
-export async function configureRtt(mgr: SessionManager, terminals: RttTerminals, requestedIndex?: number): Promise<void> {
-  const session = await mgr.ensureUp('RTT logs'),
+export async function configureRtt(mgr: SessionManager, terminals: RttTerminals, requestedIndex?: number, client?: string): Promise<void> {
+  const session = await mgr.ensureUp('RTT logs', undefined, client),
     index = await selectProbe(session, requestedIndex),
-    existing = mgr.rttConfigs.find((entry) => entry.index === index),
+    existing = mgr.getRttConfigs(session.client).find((entry) => entry.index === index),
     config = await promptConfig(index, existing);
   if (!config){
     return;
   }
   terminals.close(session, index);
-  await mgr.setRttConfigs([...mgr.rttConfigs.filter((entry) => entry.index !== index), config]);
+  await mgr.setRttConfigs([...mgr.getRttConfigs(session.client).filter((entry) => entry.index !== index), config], session.client);
   await waitForRestart(mgr, session);
   terminals.show(session, index, config.channel);
 }
 
-export async function openRtt(mgr: SessionManager, terminals: RttTerminals, index: number): Promise<void> {
-  const session = await mgr.ensureUp('RTT logs'),
-    config = mgr.rttConfigs.find((entry) => entry.index === index);
+export async function openRtt(mgr: SessionManager, terminals: RttTerminals, index: number, client?: string): Promise<void> {
+  const session = await mgr.ensureUp('RTT logs', undefined, client),
+    config = mgr.getRttConfigs(session.client).find((entry) => entry.index === index);
   if (!config){
-    await configureRtt(mgr, terminals, index);
+    await configureRtt(mgr, terminals, index, session.client);
     return;
   }
   terminals.show(session, index, config.channel);
 }
 
-export async function removeRtt(mgr: SessionManager, terminals: RttTerminals, index: number): Promise<void> {
-  const config = mgr.rttConfigs.find((entry) => entry.index === index);
+export async function removeRtt(mgr: SessionManager, terminals: RttTerminals, index: number, client?: string): Promise<void> {
+  const config = mgr.getRttConfigs(client).find((entry) => entry.index === index);
   if (!config){
     throw new Error(`RTT configuration for ST-Link ${index} was not found`);
   }
@@ -104,8 +104,8 @@ export async function removeRtt(mgr: SessionManager, terminals: RttTerminals, in
   if (answer !== 'Remove'){
     return;
   }
-  const session = mgr.session;
-  await mgr.setRttConfigs(mgr.rttConfigs.filter((entry) => entry.index !== index));
+  const session = client ? mgr.getSession(client) : mgr.session;
+  await mgr.setRttConfigs(mgr.getRttConfigs(client).filter((entry) => entry.index !== index), client);
   if (session){
     terminals.close(session, index);
   }

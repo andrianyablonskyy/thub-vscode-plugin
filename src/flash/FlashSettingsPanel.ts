@@ -46,7 +46,7 @@ export class FlashSettingsPanel {
         labels.push({ value: label, label: `${label}${t.group?.id === vscode.TaskGroup.Build.id && t.group.isDefault ? ' (default build task)' : ''}` });
       }
     }
-    const mine = this.mgr.mine,
+    const mine = this.mgr.mines.find((resource) => resource.type === 'hw'),
       boardLabels = [...new Set(this.mgr.resources.flatMap((r) => r.labels))].sort();
     await this.panel.webview.postMessage({
       type: 'state',
