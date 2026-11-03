@@ -46,7 +46,17 @@ export function treeItemName(value: unknown): string | undefined {
   if (typeof value.client === 'string'){
     return value.client;
   }
-  return typeof value.label === 'string' ? value.label : undefined;
+  if (typeof value.label === 'string'){
+    return value.label;
+  }
+  return isRecord(value.label) && typeof value.label.label === 'string' ? value.label.label : undefined;
+}
+
+export function treeItemBoardId(value: unknown): string | undefined {
+  if (!isRecord(value) || typeof value.id !== 'string' || !value.id.startsWith('board:')){
+    return undefined;
+  }
+  return value.id.slice('board:'.length) || undefined;
 }
 
 export function treeItemForwardName(value: unknown): string | undefined {

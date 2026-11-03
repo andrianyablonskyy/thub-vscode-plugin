@@ -6,7 +6,7 @@ import { AgentRuntime } from './cli/AgentRuntime';
 import { SessionManager } from './session/SessionManager';
 import { supportsResourceFeature } from './session/resourceFeatures';
 import { BoardsTree } from './views/BoardsTree';
-import { treeItemAddress, treeItemClient, treeItemForwardName, treeItemIndex, treeItemName } from './views/treeActions';
+import { treeItemAddress, treeItemBoardId, treeItemClient, treeItemForwardName, treeItemIndex, treeItemName } from './views/treeActions';
 import { PortsView } from './views/PortsView';
 import { StatusBar } from './views/StatusBar';
 import { SerialTerminals } from './serial/SerialTerminal';
@@ -152,7 +152,10 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   command('thub.refresh', () => mgr.refresh());
   command('thub.showLog', () => log.show());
-  command('thub.reserve', (value?: unknown) => reserveFlow(mgr, treeItemName(value)));
+  command('thub.reserve', (value?: unknown) => {
+    const name = treeItemName(value) || mgr.resources.find((resource) => resource.id === treeItemBoardId(value))?.name;
+    return reserveFlow(mgr, name);
+  });
   command('thub.extend', async (value?: unknown) => {
     const client = selectedClient(value);
     await mgr.extend(60, client);

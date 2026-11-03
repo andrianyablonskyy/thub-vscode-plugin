@@ -1,5 +1,5 @@
 import * as assert from 'node:assert/strict';
-import { treeItemAddress, treeItemClient, treeItemForwardName, treeItemIndex, treeItemName } from '../../src/views/treeActions';
+import { treeItemAddress, treeItemBoardId, treeItemClient, treeItemForwardName, treeItemIndex, treeItemName } from '../../src/views/treeActions';
 
 suite('tree actions', () => {
   test('reads endpoint indices from tree nodes and direct commands', () => {
@@ -23,6 +23,9 @@ suite('tree actions', () => {
     assert.equal(treeItemIndex(item), 2);
     assert.equal(treeItemIndex({ id: 'endpoint:hil%3A1:0:127.0.0.1%3A5001' }), 0);
     assert.equal(treeItemName({ label: 'hil-1' }), 'hil-1');
+    assert.equal(treeItemName({ label: { label: 'hil-2', highlights: [] } }), 'hil-2');
+    assert.equal(treeItemBoardId({ id: 'board:resource-123', label: 'hil-3' }), 'resource-123');
+    assert.equal(treeItemBoardId({ id: 'endpoint:hil-1:0:' }), undefined);
   });
 
   test('recovers forwarded service names without the tree label suffix', () => {
