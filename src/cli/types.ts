@@ -67,6 +67,7 @@ export interface RttConfig {
   address: string;
   size: string;
   channel: number;
+  target?: string;
 }
 
 /** `thub connect --json`: a forwarded Client service's local listener. */
@@ -105,6 +106,7 @@ export interface Features {
   connectNdjson: boolean;
   connectForward: boolean;
   connectRtt: boolean;
+  connectRttTarget: boolean;
   whoamiJson: boolean;
   /** `thub power <client>` for a reservation's holder (not yet in thub). */
   powerByClient: boolean;

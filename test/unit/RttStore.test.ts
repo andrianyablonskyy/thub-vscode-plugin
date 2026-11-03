@@ -21,6 +21,9 @@ class MemoryState implements vscode.Memento {
 
 suite('RTT configuration and stream decoding', () => {
   test('validates a 32-bit search range and rejects invalid or duplicate probe entries', () => {
+    assert.deepEqual(normalizeRtts([{ index: 1, address: '0x20000000', size: '0x10000', channel: 0, target: 'stm32g4x' }]), [
+      { index: 1, address: '0x20000000', size: '0x10000', channel: 0, target: 'stm32g4x' }
+    ]);
     assert.deepEqual(normalizeRtts([{ index: 1, address: '0x20000000', size: '0x10000', channel: 0 }]), [
       { index: 1, address: '0x20000000', size: '0x10000', channel: 0 }
     ]);
@@ -29,6 +32,7 @@ suite('RTT configuration and stream decoding', () => {
       [{ index: 1, address: '0xFFFFFFFF', size: '2', channel: 0 }],
       [{ index: 1, address: '0x20000000', size: '0', channel: 0 }],
       [{ index: 1, address: '0x20000000', size: '0x10000', channel: 256 }],
+      [{ index: 1, address: '0x20000000', size: '0x10000', channel: 0, target: '../../shutdown' }],
       [{ index: 1, address: '0x20000000', size: '0x10000', channel: 0 }, { index: 1, address: '0x20000000', size: '0x10000', channel: 1 }]
     ]){
       assert.throws(() => normalizeRtts(configs));
@@ -37,7 +41,7 @@ suite('RTT configuration and stream decoding', () => {
 
   test('saves RTT settings per resource and supports removing a setup', async () => {
     const store = new RttStore(new MemoryState()),
-      config = { index: 1, address: '0x20000000', size: '0x10000', channel: 0 };
+      config = { index: 1, address: '0x20000000', size: '0x10000', channel: 0, target: 'stm32g4x' };
     await store.write('resource-1', [config]);
     await store.write('resource-2', [{ ...config, index: 2, channel: 1 }]);
     assert.deepEqual(store.read('resource-1'), [config]);

@@ -12,7 +12,7 @@
   },
   "engines": {
     "vscode": "^1.90.0",
-    "node": ">=20"
+    "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "categories": [
     "Debuggers",
@@ -743,11 +743,15 @@
     "@types/node": "20.19.43",
     "@types/vscode": "1.90.0",
     "@vscode/test-electron": "3.1.0",
-    "@vscode/vsce": "4.0.0",
+    "@vscode/vsce": "4.1.0",
     "esbuild": "0.28.2",
-    "eslint": "9.39.5",
-    "mocha": "11.8.0",
+    "eslint": "10.14.0",
+    "mocha": "12.0.3",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.71.0"
+    "typescript-eslint": "8.72.1"
+  },
+  "overrides": {
+    "glob": "14.0.3",
+    "minimatch": "^11.0.1"
   }
 }

@@ -13,6 +13,7 @@ const ready: Features = {
   connectNdjson: true,
   connectForward: true,
   connectRtt: true,
+  connectRttTarget: true,
   whoamiJson: true,
   powerByClient: false
 };
@@ -83,7 +84,7 @@ suite('AgentRuntime', () => {
         platform: 'linux',
         spawn: f.spawn
       }),
-      cli = fakeCli('1.1.24', { ...ready, version: '1.1.24', connectRtt: false });
+      cli = fakeCli('1.1.24', { ...ready, version: '1.1.24', connectRttTarget: false });
     assert.equal(await runtime.ensure(cli), '1.1.25');
     assert.equal(f.calls.length, 2);
     assert.equal(f.calls[1].command, 'npm');

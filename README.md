@@ -73,7 +73,7 @@ The same port is a plain TCP socket, `127.0.0.1:5001` and up. Other tools can us
 
 ## RTT logs
 
-Choose **Add RTT reader…** under **My session** and select an ST-Link. Enter the RAM search start address and size that cover the firmware's SEGGER RTT control block (from its linker map); channel 0 is the usual log channel. The setup is saved locally per resource and restored on reconnect. Open the **RTT · ST-Link · CH** entry to read the UTF-8 stream in a VS Code terminal. OpenOCD uses the ST-Link exclusively during RTT capture, so close the RTT terminal before debugging or flashing.
+Choose **Add RTT reader…** under **My session** and select an ST-Link. Enter the RAM search start address and size that cover the firmware's SEGGER RTT control block (from its linker map), and the OpenOCD target script if the Client doesn't already have one configured; for an STM32G4, use `stm32g4x`. Channel 0 is the usual log channel. The setup is saved locally per resource and restored on reconnect. Open the **RTT · ST-Link · CH** entry to read the UTF-8 stream in a VS Code terminal. OpenOCD uses the ST-Link exclusively during RTT capture, so close the RTT terminal before debugging or flashing.
 
 ## Camera
 

@@ -2,7 +2,8 @@ import type * as vscode from 'vscode';
 import type { RttConfig } from '../cli/types';
 
 const STORAGE_KEY = 'thub.rttConfigs.v1',
-  ADDRESS = /^(?:0[xX][0-9a-fA-F]{1,8}|[0-9]{1,10})$/;
+  ADDRESS = /^(?:0[xX][0-9a-fA-F]{1,8}|[0-9]{1,10})$/,
+  TARGET = /^[A-Za-z0-9_.-]{1,64}$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -36,11 +37,14 @@ export function normalizeRtts(value: unknown): RttConfig[] {
     if (channel < 0 || channel > 255){
       throw new Error(`RTT configuration ${index + 1}: channel must be between 0 and 255`);
     }
+    if (entry.target !== undefined && (typeof entry.target !== 'string' || !TARGET.test(entry.target))){
+      throw new Error(`RTT configuration ${index + 1}: OpenOCD target must be a target script name`);
+    }
     if (seen.has(probeIndex)){
       throw new Error(`An RTT configuration for ST-Link ${probeIndex} already exists`);
     }
     seen.add(probeIndex);
-    return { index: probeIndex, address, size, channel };
+    return { index: probeIndex, address, size, channel, ...(entry.target ? { target: entry.target } : {}) };
   });
 }
 

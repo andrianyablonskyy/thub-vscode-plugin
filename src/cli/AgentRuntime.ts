@@ -87,7 +87,7 @@ export class AgentRuntime {
     }
 
     if (this.options.cliPath().trim()){
-      throw new Error(`The configured thub CLI (${cli.command}) needs \`connect --rtt\` and \`connect --forward\`. Clear thub.cliPath to let the extension manage its own Agent CLI, or update the configured CLI.`);
+      throw new Error(`The configured thub CLI (${cli.command}) needs \`connect --rtt\` with target support and \`connect --forward\`. Clear thub.cliPath to let the extension manage its own Agent CLI, or update the configured CLI.`);
     }
 
     const install = this.installPromise ??= this.installManagedAgent();
@@ -104,7 +104,7 @@ export class AgentRuntime {
     version = await cli.version();
     features = await cli.getFeatures();
     if (!version || !this.hasRequiredFeatures(features)){
-      throw new Error(`The installed thub Agent${version ? ` (${version})` : ''} does not provide the required \`connect --rtt\` and \`connect --forward\` options. Check that the latest @andrian.yablonskyy/thub-agent is available from npm.`);
+      throw new Error(`The installed thub Agent${version ? ` (${version})` : ''} does not provide the required \`connect --rtt\` target support and \`connect --forward\` options. Check that the latest @andrian.yablonskyy/thub-agent is available from npm.`);
     }
     return version;
   }
@@ -124,7 +124,7 @@ export class AgentRuntime {
   }
 
   private hasRequiredFeatures(features: Features): boolean {
-    return features.reserve && features.connectNdjson && features.connectRtt && features.connectForward;
+    return features.reserve && features.connectNdjson && features.connectRtt && features.connectRttTarget && features.connectForward;
   }
 
   private async requireNode24(): Promise<void> {

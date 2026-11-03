@@ -180,6 +180,7 @@ export class ThubCli {
         connectNdjson: /NDJSON/i.test(connect),
         connectForward: /--forward/.test(connect),
         connectRtt: /--rtt/.test(connect),
+        connectRttTarget: /channel\[,target\]/i.test(connect),
         whoamiJson: /--json/.test(whoami),
         powerByClient: /<client>/.test(power)
       };
@@ -240,7 +241,7 @@ export class ThubCli {
     const args = ['connect', client, '--json',
       '--uart-port', String(ports.uart), '--gdb-port', String(ports.gdb), '--video-port', String(ports.video),
       ...forwards.flatMap((f) => ['--forward', `${f.name}=${f.clientPort}`]),
-      ...rtts.flatMap((r) => ['--rtt', `${r.index}=${r.address},${r.size},${r.channel}`]),
+      ...rtts.flatMap((r) => ['--rtt', `${r.index}=${r.address},${r.size},${r.channel}${r.target ? `,${r.target}` : ''}`]),
       ...(target ? ['--target', target] : [])];
     this.opts.log(`$ thub ${args.join(' ')}`);
     return this.launch(args, { env: await this.env(), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });

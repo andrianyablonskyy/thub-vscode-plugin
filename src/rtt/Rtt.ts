@@ -27,7 +27,7 @@ async function selectProbe(session: Awaited<ReturnType<SessionManager['ensureUp'
   return pick.index;
 }
 
-async function promptConfig(index: number, existing?: RttConfig): Promise<RttConfig | undefined> {
+async function promptConfig(index: number, existing?: RttConfig, defaultTarget?: string): Promise<RttConfig | undefined> {
   const address = await vscode.window.showInputBox({
     title: `RTT · ST-Link ${index} · control-block search range`,
     prompt: 'RAM start address to search for the SEGGER RTT control block (from the linker map)',
@@ -51,6 +51,16 @@ async function promptConfig(index: number, existing?: RttConfig): Promise<RttCon
   if (size === undefined){
     return undefined;
   }
+  const target = await vscode.window.showInputBox({
+    title: `RTT · ST-Link ${index} · OpenOCD target`,
+    prompt: 'Target script name, for example stm32g4x; leave blank to use the Client configuration',
+    value: existing?.target || defaultTarget || '',
+    validateInput: (value) => !value.trim() || /^[A-Za-z0-9_.-]{1,64}$/.test(value.trim())
+      ? undefined : 'Enter an OpenOCD target script name, for example stm32g4x'
+  });
+  if (target === undefined){
+    return undefined;
+  }
   const channel = await vscode.window.showInputBox({
     title: `RTT · ST-Link ${index} · up-channel`,
     prompt: 'RTT up-channel to read (0 is the usual log channel)',
@@ -58,7 +68,10 @@ async function promptConfig(index: number, existing?: RttConfig): Promise<RttCon
     validateInput: (value) => /^\d+$/.test(value) && Number(value) <= 255
       ? undefined : 'Enter a channel between 0 and 255'
   });
-  return channel === undefined ? undefined : { index, address: address.trim(), size: size.trim(), channel: Number(channel) };
+  return channel === undefined ? undefined : {
+    index, address: address.trim(), size: size.trim(), channel: Number(channel),
+    ...(target.trim() ? { target: target.trim() } : {})
+  };
 }
 
 async function waitForRestart(mgr: SessionManager, session: Awaited<ReturnType<SessionManager['ensureUp']>>): Promise<void> {
@@ -71,7 +84,7 @@ export async function configureRtt(mgr: SessionManager, terminals: RttTerminals,
   const session = await mgr.ensureUp('RTT logs', undefined, client),
     index = await selectProbe(session, requestedIndex),
     existing = mgr.getRttConfigs(session.client).find((entry) => entry.index === index),
-    config = await promptConfig(index, existing);
+    config = await promptConfig(index, existing, session.ready?.ports.find((port) => port.kind === 'swd' && port.index === index)?.target || session.target);
   if (!config){
     return;
   }

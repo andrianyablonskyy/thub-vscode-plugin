@@ -289,6 +289,9 @@ export class SessionManager implements vscode.Disposable {
     if (checked.length && !(await this.cli.getFeatures()).connectRtt){
       throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
+    if (checked.some((rtt) => rtt.target) && !(await this.cli.getFeatures()).connectRttTarget){
+      throw new Error('The configured thub CLI does not support RTT-specific OpenOCD targets; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
+    }
     await this.rttStore.write(mine.id, checked);
     const reservationId = mine.reservation?.id;
     const session = this.sessions.get(mine.name);
@@ -318,6 +321,9 @@ export class SessionManager implements vscode.Disposable {
     const rtts = supportsResourceFeature(mine, 'rtt') ? this.rttStore.read(mine.id) : [];
     if (rtts.length && !(await this.cli.getFeatures()).connectRtt){
       throw new Error('The configured thub CLI does not support `connect --rtt`; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
+    }
+    if (rtts.some((rtt) => rtt.target) && !(await this.cli.getFeatures()).connectRttTarget){
+      throw new Error('The configured thub CLI does not support RTT-specific OpenOCD targets; clear thub.cliPath to use the extension-managed CLI, or update the configured CLI.');
     }
     this.sessions.get(mine.name)?.end('Replaced');
     const id = reservationId,
