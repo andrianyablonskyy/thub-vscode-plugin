@@ -217,9 +217,11 @@ td { padding: 7px 8px; border-bottom: 1px solid var(--border); white-space: nowr
 td.remote, td.local { font-family: var(--vscode-editor-font-family); }
 .right { text-align: right; }
 .act { border: 0; background: none; padding: 0 0 0 14px; color: var(--muted); }
-.act.icon { width: 30px; height: 30px; padding: 5px; vertical-align: middle; }
-.act.icon.primary { color: var(--accent); }
-.act.icon:hover { color: var(--vscode-foreground); }
+.act.icon { width: 28px; height: 28px; padding: 5px; margin-left: 6px; vertical-align: middle; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 6px; color: var(--vscode-icon-foreground, var(--vscode-foreground)); }
+.act.icon svg.icon { width: 16px; height: 16px; display: block; }
+.act.icon.primary { color: var(--accent); border-color: var(--accent); }
+.act.icon:hover:not(:disabled) { color: var(--vscode-foreground); background: var(--vscode-toolbar-hoverBackground); }
 .act.primary { color: var(--accent); }
 .tone-ok { color: var(--ok); } .tone-err { color: var(--error); }
 .small { font-size: .9em; margin-top: 10px; }
