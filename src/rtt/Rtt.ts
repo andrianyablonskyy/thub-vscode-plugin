@@ -51,13 +51,7 @@ async function promptConfig(index: number, existing?: RttConfig, defaultTarget?:
   if (size === undefined){
     return undefined;
   }
-  const target = await vscode.window.showInputBox({
-    title: `RTT · ST-Link ${index} · OpenOCD target`,
-    prompt: 'Target script name, for example stm32g4x; leave blank to use the Client configuration',
-    value: existing?.target || defaultTarget || '',
-    validateInput: (value) => !value.trim() || /^[A-Za-z0-9_.-]{1,64}$/.test(value.trim())
-      ? undefined : 'Enter an OpenOCD target script name, for example stm32g4x'
-  });
+  const target = await promptTarget(index, existing?.target || defaultTarget || '', !defaultTarget);
   if (target === undefined){
     return undefined;
   }
@@ -70,12 +64,32 @@ async function promptConfig(index: number, existing?: RttConfig, defaultTarget?:
   });
   return channel === undefined ? undefined : {
     index, address: address.trim(), size: size.trim(), channel: Number(channel),
-    ...(target.trim() ? { target: target.trim() } : {})
+    ...(target ? { target } : {})
   };
 }
 
+async function promptTarget(index: number, value: string, required: boolean): Promise<string | undefined> {
+  const target = await vscode.window.showInputBox({
+    title: `RTT · ST-Link ${index} · OpenOCD target`,
+    prompt: required
+      ? 'Required: OpenOCD target script name, for example stm32g4x'
+      : 'Target script name, for example stm32g4x; leave blank to use the Client configuration',
+    value,
+    placeHolder: 'stm32g4x',
+    validateInput: (input) => {
+      const trimmed = input.trim();
+      if (required && !trimmed){
+        return 'Enter the OpenOCD target script name';
+      }
+      return !trimmed || /^[A-Za-z0-9_.-]{1,64}$/.test(trimmed)
+        ? undefined : 'Enter an OpenOCD target script name, for example stm32g4x';
+    }
+  });
+  return target === undefined ? undefined : target.trim() || undefined;
+}
+
 async function waitForRestart(mgr: SessionManager, session: Awaited<ReturnType<SessionManager['ensureUp']>>): Promise<void> {
-  if (mgr.session === session && !session.isUp){
+  if (mgr.getSession(session.client) === session && !session.isUp){
     await session.whenUp();
   }
 }
@@ -100,6 +114,17 @@ export async function openRtt(mgr: SessionManager, terminals: RttTerminals, inde
   if (!config){
     await configureRtt(mgr, terminals, index, session.client);
     return;
+  }
+  const portTarget = session.ready?.ports.find((port) => port.kind === 'swd' && port.index === index)?.target,
+    target = config.target || portTarget || session.target;
+  if (!target){
+    const configuredTarget = await promptTarget(index, '', true);
+    if (!configuredTarget){
+      return;
+    }
+    const updated = { ...config, target: configuredTarget };
+    await mgr.setRttConfigs([...mgr.getRttConfigs(session.client).filter((entry) => entry.index !== index), updated], session.client);
+    await waitForRestart(mgr, session);
   }
   terminals.show(session, index, config.channel);
 }

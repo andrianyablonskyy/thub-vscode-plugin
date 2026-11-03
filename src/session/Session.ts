@@ -8,6 +8,7 @@ import type { ChildProcess } from 'node:child_process';
 import type { ThubCli } from '../cli/ThubCli';
 import { parseConnectLine } from '../cli/parse';
 import type { ConnectReady, ForwardConfig, Resource, RttConfig } from '../cli/types';
+import { parseRttError, type RttError } from './rttErrors';
 import { freeBlock, isFree } from '../util/ports';
 import { settings } from '../util/config';
 
@@ -41,12 +42,14 @@ export class Session implements vscode.Disposable {
   private readonly changed = new vscode.EventEmitter<void>();
   private readonly ended = new vscode.EventEmitter<string>();
   private readonly cameBack = new vscode.EventEmitter<void>();
+  private readonly rttFailed = new vscode.EventEmitter<RttError>();
   /** Link state, ports or video changed. */
   readonly onDidChange = this.changed.event;
   /** The session is over (reason); everything it owned is gone. */
   readonly onDidEnd = this.ended.event;
   /** The link came back after `thub connect` restarted: a debugger must reattach. */
   readonly onDidReconnect = this.cameBack.event;
+  readonly onDidRttError = this.rttFailed.event;
 
   constructor(
     private readonly cli: ThubCli,
@@ -195,6 +198,10 @@ export class Session implements vscode.Disposable {
     readline.createInterface({ input: child.stdout! }).on('line', (line) => this.onLine(line));
     readline.createInterface({ input: child.stderr! }).on('line', (line) => {
       this.log(`[connect ${this.client}] ${line}`);
+      const rttError = parseRttError(line);
+      if (rttError){
+        this.rttFailed.fire(rttError);
+      }
       if (/^Error:/.test(line)){
         this.lastError = line.replace(/^Error:\s*/, '');
       }
@@ -324,5 +331,6 @@ export class Session implements vscode.Disposable {
     this.changed.dispose();
     this.ended.dispose();
     this.cameBack.dispose();
+    this.rttFailed.dispose();
   }
 }

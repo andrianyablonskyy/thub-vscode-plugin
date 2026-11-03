@@ -14,12 +14,36 @@ export class RttTerminal implements vscode.Pseudoterminal {
   private retry?: NodeJS.Timeout;
   private closed = false;
   private waiting = false;
+  private failed = false;
   private connectedOnce = false;
   private readonly decoder = new RttDecoder();
+  private readonly errorSubscription: vscode.Disposable;
 
-  constructor(private readonly session: Session, readonly index: number, readonly channel: number){}
+  constructor(private readonly session: Session, readonly index: number, readonly channel: number) {
+    this.errorSubscription = session.onDidRttError(({ index: failedIndex, message }) => {
+      if (failedIndex === this.index){
+        this.failed = true;
+        clearTimeout(this.retry);
+        this.note(`RTT stopped: ${message}`);
+        this.sock?.destroy();
+      }
+    });
+  }
 
   open(): void {
+    this.connect();
+  }
+
+  get hasFailed(): boolean {
+    return this.failed;
+  }
+
+  retryConnection(): void {
+    if (this.closed || !this.failed){
+      return;
+    }
+    this.failed = false;
+    this.waiting = false;
     this.connect();
   }
 
@@ -61,7 +85,7 @@ export class RttTerminal implements vscode.Pseudoterminal {
         return;
       }
       this.sock = undefined;
-      if (this.closed){
+      if (this.closed || this.failed){
         return;
       }
       if (this.session.link !== 'ended'){
@@ -94,6 +118,7 @@ export class RttTerminal implements vscode.Pseudoterminal {
 
   dispose(): void {
     this.close();
+    this.errorSubscription.dispose();
     this.writeEmitter.dispose();
     this.closeEmitter.dispose();
   }
@@ -106,6 +131,7 @@ export class RttTerminals {
     const key = `${session.reservationId}:${index}`,
       existing = this.terminals.get(key);
     if (existing && vscode.window.terminals.includes(existing.term)){
+      existing.pty.retryConnection();
       existing.term.show(true);
       return existing.pty;
     }
