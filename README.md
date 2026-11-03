@@ -87,7 +87,7 @@ The stream's address is unique to your reservation and stops when the reservatio
 
 ## Ports
 
-The **thub Ports** panel lists every local port of your connected resources (UARTs, GDB, RTT, camera and forwarded services). Use **Add forwarded service…** under **My session** or in the Ports panel, then enter a name and a port on the Client host, such as `Web UI` and `3000`. Services are saved locally per resource, restored on reconnect, and can be updated or removed from their tree item or Ports row. Their local tunnel port is assigned automatically; select a service in the tree or choose **Open** in Ports to view its page inside VS Code.
+The **thub Ports** panel lists every local port of your connected resources (UARTs, GDB, RTT, camera and forwarded services). Use **Add forwarded service…** under **My session** or in the Ports panel, then enter the service name and port on the Client host as `ServiceName:port`, such as `Web UI:3000`. Services are saved locally per resource, restored on reconnect, and can be updated or removed from their tree item or Ports row. Their local tunnel port is assigned automatically; select a service in the tree or choose **Open** in Ports to view its page inside VS Code.
 
 ## Limitations
 
