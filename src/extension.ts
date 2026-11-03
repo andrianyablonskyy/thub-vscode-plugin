@@ -1,6 +1,7 @@
 // thub for VS Code: wires the pieces together on activation — nothing else.
 
 import * as vscode from 'vscode';
+import * as fs from 'node:fs';
 import { ThubCli, ThubError } from './cli/ThubCli';
 import { AgentRuntime } from './cli/AgentRuntime';
 import { SessionManager } from './session/SessionManager';
@@ -189,9 +190,21 @@ export function activate(context: vscode.ExtensionContext): void {
   command('thub.configureFlashAfterBuild', () => FlashSettingsPanel.show(fab, mgr));
   command('thub.toggleFlashAfterBuild', () => fab.toggle());
   command('thub.debug', async (value?: unknown) => {
-    const folder = mainFolder();
+    const folder = mainFolder(),
+      client = selectedClient(value);
+    // Same as Flash: a missing ELF asks for the file instead of failing in the debugger.
+    let executable = await flasher.resolveImage(undefined, folder);
+    if (!fs.existsSync(executable)){
+      const picked = await flasher.pickImage(executable, client ?? 'the reserved board');
+      if (!picked){
+        return;
+      }
+      executable = picked;
+    }
+    // A GDB record carries its ST-Link index; debug that probe.
+    const probe = treeItemIndex(value);
     await vscode.debug.startDebugging(folder, {
-      ...DEFAULT_LAUNCH, executable: settings.flashAfterBuild(folder).image, thubClient: selectedClient(value)
+      ...DEFAULT_LAUNCH, executable, thubClient: client, ...(probe !== undefined ? { probe } : {})
     });
   });
   command('thub.reattachDebugger', () => debugTracker.reattach());

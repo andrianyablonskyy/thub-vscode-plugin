@@ -311,8 +311,8 @@ export class SessionManager implements vscode.Disposable {
     this.activeClient = mine.name;
     const existing = this.sessions.get(mine.name),
       wantedTarget = target || settings.defaultTarget() || undefined;
-    // Reuse only when the OpenOCD target matches; otherwise reconnect with it.
-    if (existing?.reservationId === reservationId && existing.target === wantedTarget){
+    // Reuse unless an explicit OpenOCD target differs; no target requested = keep what's up.
+    if (existing?.reservationId === reservationId && (!wantedTarget || existing.target === wantedTarget)){
       this.changed.fire();
       return existing;
     }

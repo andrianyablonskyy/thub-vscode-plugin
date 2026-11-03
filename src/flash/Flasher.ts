@@ -160,7 +160,7 @@ export class Flasher {
   }
 
   /** The configured image is missing: ask for another file, or undefined to cancel. */
-  private async pickImage(missing: string, client: string): Promise<string | undefined> {
+  async pickImage(missing: string, client: string): Promise<string | undefined> {
     const choose = 'Select firmware file…',
       pick = await vscode.window.showWarningMessage(
         `Firmware image not found: ${missing}`, { modal: true, detail: `Choose the firmware to flash to ${client}.` }, choose);
