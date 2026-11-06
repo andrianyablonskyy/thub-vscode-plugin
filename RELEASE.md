@@ -2,6 +2,61 @@
 
 What changed in each release, newest first. `## Unreleased` collects the changes since the version on the VS Code Marketplace; `bin/publish` turns that heading into the version and date it releases, and publishes this file as the extension's changelog.
 
+## Unreleased
+
+### Changed
+
+- **Ports view actions:** every row action is an icon button with a hover hint. Debug, Flash, Open terminal, Open video and Open logs no longer use the amber primary tint, so each view has one amber control at most.
+- **User manual:** new `docs/user-manual.md` covering sign-in, reserving, flashing, flash after build, debugging, serial, RTT, camera, forwarded services, USB power, troubleshooting and the command reference; linked from the README.
+
+## 0.1.11 — 2026-11-03
+
+### Fixed
+
+- **Debug session firmware upload:** the debug session now flashes firmware through the session that owns it.
+
+## 0.1.10 — 2026-11-03
+
+### Fixed
+
+- **Flasher:** flashing fixes, including the ST-Link choice and the missing-image handling below.
+
+### Added
+
+- **Choose the ST-Link:** when a board has several ST-Links, flashing asks which one to use (unless a probe is given explicitly or the run is a task).
+- **Pick a missing firmware file:** an interactive flash whose image is missing offers a file picker. Tasks and flash-after-build stay strict and never open a dialog.
+
+## 0.1.9 — 2026-11-03
+
+### Fixed
+
+- **RTT connection:** RTT readers reconnect correctly.
+
+## 0.1.8 — 2026-11-03
+
+### Fixed
+
+- **RTT logs:** fixed the log stream issue.
+
+## 0.1.7 — 2026-11-03
+
+### Fixed
+
+- **RTT:** fixes to the RTT reader setup and stream.
+- **Board lock in the tree:** the lock/release button on a board works again (fixed in two passes).
+
+### Changed
+
+- **Clearer RTT errors:** OpenOCD and ST-Link failures (no target, no ST-Link, OpenOCD not running or in use, ST-Link already in use) are shown as readable messages.
+
+## 0.1.6 — 2026-11-02
+
+### Changed
+
+- **Two reservations:** one HIL and one SIL resource can be held at the same time. Switching a resource releases only that kind; the switch dialog says which one stays.
+- **Debug per reservation:** each debug session belongs to its own reservation, so Reattach and the debug context work for the right board.
+- **SIL features:** the feature list for SIL resources was updated (GDB and port forwarding only).
+
 ## 0.1.5 — 2026-11-02
 
 ### Fixed
