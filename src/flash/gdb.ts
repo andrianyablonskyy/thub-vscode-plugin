@@ -39,7 +39,17 @@ export interface FlashOutcome {
 /** Reads GDB's output: did the load (and the verify) succeed? */
 export function readFlashOutput(output: string, code: number | null, verify: boolean): FlashOutcome {
   const text = output,
-    mismatch = /MIS-MATCHED/i.test(text),
+    // GDB never reached the board: its OpenOCD didn't open the probe, so `load`
+    // ran on an exec target and the compare that follows is meaningless.
+    probeBusy = /already in use by|is already in use/i.test(text),
+    unreachable = /Remote connection closed|You can't do that when your target is `exec'|init mode failed|unable to connect to the target/i.test(text);
+  if (probeBusy){
+    return { ok: false, verified: false, summary: 'The ST-Link is in use by another connection (an RTT reader). Pause it and flash again.' };
+  }
+  if (unreachable){
+    return { ok: false, verified: false, summary: 'GDB couldn\'t reach the board: OpenOCD on the Client did not connect to the target.' };
+  }
+  const mismatch = /MIS-MATCHED/i.test(text),
     loaded = /Transfer rate|Start address/i.test(text),
     failure = text.split(/\r?\n/).find((l) => /(error|failed|refused|timed out|not halted|Connection closed|No such file|can't|cannot)/i.test(l)
       && !/^warning:/i.test(l.trim()));

@@ -94,6 +94,49 @@ export class Flasher {
       await vscode.debug.stopDebugging(debugging);
     }
     const probe = await this.pickProbe(session, req.probe, quiet);
+    if (this.mgr.getRttConfigs(session.client).some((c) => c.index === probe)){
+      return this.withRttPaused(session, probe, req, quiet, write);
+    }
+    return this.flashOn(session, probe, req, quiet, write);
+  }
+
+  /**
+   * An RTT reader holds this ST-Link (its OpenOCD owns the probe), so GDB's own
+   * OpenOCD can't open it. Pause that reader for the flash and restore it after.
+   */
+  private async withRttPaused(session: Session, probe: number, req: FlashRequest, quiet: boolean, write: (t: string) => void): Promise<FlashResult> {
+    const client = session.client,
+      configs = this.mgr.getRttConfigs(client),
+      held = configs.find((c) => c.index === probe);
+    if (!held){
+      return this.flashOn(session, probe, req, quiet, write);
+    }
+    if (!quiet){
+      const pick = await vscode.window.showWarningMessage(
+        `The RTT reader on ST-Link ${probe} holds the probe, so GDB can't connect.`,
+        { modal: true, detail: 'Pause the RTT reader for this flash. It is restored when the flash ends.' },
+        'Pause RTT and flash'
+      );
+      if (!pick){
+        throw new Error(`Canceled: ST-Link ${probe} is used by the RTT reader`);
+      }
+    }
+    write(`thub: pausing the RTT reader on ST-Link ${probe} for the flash\n`);
+    await this.mgr.setRttConfigs(configs.filter((c) => c.index !== probe), client);
+    try {
+      // Wait for the restarted connect to drop the RTT OpenOCD for this probe.
+      for (let i = 0; i < 60 && session.ready?.ports.some((p) => p.kind === 'rtt' && p.index === probe); i++){
+        await new Promise((res) => setTimeout(res, 500));
+      }
+      const fresh = await this.mgr.ensureUp('Flashing', req.target, client);
+      return await this.flashOn(fresh, probe, req, quiet, write);
+    }
+    finally {
+      await this.mgr.setRttConfigs([...this.mgr.getRttConfigs(client), held], client);
+    }
+  }
+
+  private async flashOn(session: Session, probe: number, req: FlashRequest, quiet: boolean, write: (t: string) => void): Promise<FlashResult> {
     const port = session.gdbPort(probe);
     if (!port){
       throw new Error(`${session.client} has no ST-Link ${probe} (no GDB port)`);

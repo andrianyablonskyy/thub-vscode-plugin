@@ -60,4 +60,22 @@ suite('flash', () => {
     await assert.rejects(resolveVariables('${workspaceFolder}', { ...ctx, workspaceFolder: undefined }), /needs an open folder/);
     await assert.rejects(resolveVariables('${weird}', ctx), /Unknown variable/);
   });
+
+  test('gdb output: a probe held by RTT is reported, not as a verify mismatch', () => {
+    const out = [
+      'SWD 1: ST-Link 1 is already in use by RTT; close that connection before opening SWD',
+      'Remote connection closed',
+      'Section .data, range 0x8000730 -- 0x80007a8: MIS-MATCHED!'
+    ].join('\n');
+    const r = readFlashOutput(out, 0, true);
+    assert.equal(r.ok, false);
+    assert.match(r.summary, /in use by another connection/);
+  });
+
+  test('gdb output: OpenOCD that never connected is reported as unreachable', () => {
+    const out = 'Remote connection closed\n"monitor" command not supported by this target.\nYou can\'t do that when your target is `exec\'';
+    const r = readFlashOutput(out, 0, true);
+    assert.equal(r.ok, false);
+    assert.match(r.summary, /couldn't reach the board/);
+  });
 });
