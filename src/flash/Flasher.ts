@@ -37,6 +37,8 @@ export interface FlashResult extends FlashOutcome {
 }
 
 const LAST_HASH_KEY = 'thub.lastFlashed';
+/** Set by the "Do not ask each time" checkbox: pause RTT before flashing without asking. */
+const RTT_PAUSE_ALWAYS_KEY = 'thub.rttPauseBeforeFlash';
 
 export class Flasher {
   private busy?: Promise<FlashResult>;
@@ -111,14 +113,22 @@ export class Flasher {
     if (!held){
       return this.flashOn(session, probe, req, quiet, write);
     }
-    if (!quiet){
-      const pick = await vscode.window.showWarningMessage(
-        `The RTT reader on ST-Link ${probe} holds the probe, so GDB can't connect.`,
-        { modal: true, detail: 'Pause the RTT reader for this flash. It is restored when the flash ends.' },
-        'Pause RTT and flash'
+    if (!quiet && !this.state.get<boolean>(RTT_PAUSE_ALWAYS_KEY, false)){
+      // A pick list with a checkbox: Enter pauses RTT and flashes; Escape cancels.
+      const picks = await vscode.window.showQuickPick(
+        [{ label: 'Do not ask each time', description: 'Pause RTT automatically before flashing from now on' }],
+        {
+          title: `RTT reader on ST-Link ${probe} holds the probe, so GDB can't connect`,
+          placeHolder: 'Press Enter to pause the RTT reader for this flash (restored afterwards)',
+          canPickMany: true,
+          ignoreFocusOut: true
+        }
       );
-      if (!pick){
+      if (!picks){
         throw new Error(`Canceled: ST-Link ${probe} is used by the RTT reader`);
+      }
+      if (picks.length){
+        await this.state.update(RTT_PAUSE_ALWAYS_KEY, true);
       }
     }
     write(`thub: pausing the RTT reader on ST-Link ${probe} for the flash\n`);
