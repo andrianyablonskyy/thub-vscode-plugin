@@ -116,10 +116,10 @@ export class Flasher {
     if (!quiet && !this.state.get<boolean>(RTT_PAUSE_ALWAYS_KEY, false)){
       // A pick list with a checkbox: Enter pauses RTT and flashes; Escape cancels.
       const picks = await vscode.window.showQuickPick(
-        [{ label: 'Do not ask each time', description: 'Pause RTT automatically before flashing from now on' }],
+        [{ label: 'Pause RTT', description: 'Do not ask each time: pause RTT before every flash' }],
         {
           title: `RTT reader on ST-Link ${probe} holds the probe, so GDB can't connect`,
-          placeHolder: 'Press Enter to pause the RTT reader for this flash (restored afterwards)',
+          placeHolder: 'Press Enter to pause RTT for this flash; RTT restarts afterwards',
           canPickMany: true,
           ignoreFocusOut: true
         }
@@ -131,18 +131,33 @@ export class Flasher {
         await this.state.update(RTT_PAUSE_ALWAYS_KEY, true);
       }
     }
+    const isHeld = (s: Session | undefined, on: boolean): boolean => Boolean(s?.ready) &&
+      s!.ready!.ports.some((p) => p.kind === 'rtt' && p.index === probe) === on;
     write(`thub: pausing the RTT reader on ST-Link ${probe} for the flash\n`);
     await this.mgr.setRttConfigs(configs.filter((c) => c.index !== probe), client);
     try {
-      // Wait for the restarted connect to drop the RTT OpenOCD for this probe.
-      for (let i = 0; i < 60 && session.ready?.ports.some((p) => p.kind === 'rtt' && p.index === probe); i++){
-        await new Promise((res) => setTimeout(res, 500));
-      }
+      // The connect restarts without RTT: wait until it's up again with the probe free.
+      await this.waitFor(() => isHeld(this.mgr.getSession(client), false), `the connection to ${client} restarting without RTT`);
       const fresh = await this.mgr.ensureUp('Flashing', req.target, client);
       return await this.flashOn(fresh, probe, req, quiet, write);
     }
     finally {
+      // Restart RTT on the probe, then wait for it to come back.
+      write(`thub: restarting the RTT reader on ST-Link ${probe}\n`);
       await this.mgr.setRttConfigs([...this.mgr.getRttConfigs(client), held], client);
+      await this.waitFor(() => isHeld(this.mgr.getSession(client), true), `the RTT reader on ST-Link ${probe} restarting`)
+        .catch((err: Error) => { void vscode.window.showWarningMessage(`thub: ${err.message}. Re-open the RTT logs from My session.`); });
+    }
+  }
+
+  /** Polls until the check passes, or fails after the timeout. */
+  private async waitFor(check: () => boolean, what: string, timeoutMs = 60_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (!check()){
+      if (Date.now() > deadline){
+        throw new Error(`Timed out waiting for ${what}`);
+      }
+      await new Promise((res) => setTimeout(res, 500));
     }
   }
 
