@@ -15,14 +15,21 @@ interface Row {
   remote: string;
   local: string;
   status: { text: string; tone: 'ok' | 'idle' | 'err' };
-  actions: Array<{ label: string; msg: Record<string, unknown>; primary?: boolean; icon?: 'open' | 'copy' | 'edit' | 'remove' }>;
+  actions: Array<{ label: string; msg: Record<string, unknown>; icon: ActionIcon }>;
 }
 
-const ACTION_ICONS = {
+type ActionIcon = 'open' | 'copy' | 'edit' | 'remove' | 'terminal' | 'bug' | 'upload' | 'camera';
+
+// Every row action is icon-only with a title/aria-label hint, so each needs an icon.
+const ACTION_ICONS: Record<ActionIcon, string> = {
   open: ICONS.external,
   copy: ICONS.copy,
   edit: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>',
-  remove: '<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg>'
+  remove: '<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6"/></svg>',
+  terminal: ICONS.terminal,
+  bug: ICONS.bug,
+  upload: ICONS.upload,
+  camera: ICONS.camera
 },
 ADD_ICONS = {
   rtt: '<svg class="icon" viewBox="0 0 24 24"><path d="M3 7l5 5-5 5M10 18h5"/><path d="M19 8v8m-4-4h8"/></svg>',
@@ -86,7 +93,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
           rows.push({
             icon: 'terminal', name: `${s.client} · UART ${p.index}`, remote: `${p.label} · ${p.baudRate || 115200} 8N1`, local: addr,
             status: n ? { text: `${n} client${n === 1 ? '' : 's'}`, tone: 'ok' } : { text: 'idle', tone: 'idle' },
-            actions: [{ label: 'Open terminal', msg: { type: 'serial', index: p.index, client: s.client }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` } }]
+            actions: [{ label: 'Open terminal', msg: { type: 'serial', index: p.index, client: s.client }, icon: 'terminal' }, { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` }, icon: 'copy' }]
           });
         }
         else if (p.kind === 'rtt'){
@@ -98,7 +105,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
             remote: `OpenOCD RTT up-channel · ${p.label}`, local: addr,
             status: s.isUp ? { text: 'reading available', tone: 'ok' } : { text: s.link, tone: 'idle' },
             actions: [
-              { label: 'Open logs', msg: { type: 'command', command: 'thub.openRtt', index: p.index, client: s.client }, primary: true, icon: 'open' },
+              { label: 'Open logs', msg: { type: 'command', command: 'thub.openRtt', index: p.index, client: s.client }, icon: 'open' },
               { label: 'Copy', msg: { type: 'copy', text: `socket://${addr}` }, icon: 'copy' },
               { label: 'Configure', msg: { type: 'command', command: 'thub.configureRtt', index: p.index, client: s.client }, icon: 'edit' },
               { label: 'Remove', msg: { type: 'command', command: 'thub.removeRtt', index: p.index, client: s.client }, icon: 'remove' }
@@ -111,9 +118,9 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
             icon: 'bug', name: `${s.client} · GDB · ST-Link ${p.index}`, remote: `OpenOCD · ${p.target || s.target || 'runner card\'s target'}`, local: addr,
             status: debugging ? { text: 'debugging', tone: 'ok' } : { text: 'idle', tone: 'idle' },
             actions: [
-              { label: 'Debug', msg: { type: 'command', command: 'thub.debug', client: s.client }, primary: true },
-              { label: 'Flash', msg: { type: 'command', command: 'thub.flash', client: s.client }, primary: true },
-              { label: 'Copy', msg: { type: 'copy', text: addr } }
+              { label: 'Debug', msg: { type: 'command', command: 'thub.debug', client: s.client }, icon: 'bug' },
+              { label: 'Flash', msg: { type: 'command', command: 'thub.flash', client: s.client }, icon: 'upload' },
+              { label: 'Copy', msg: { type: 'copy', text: addr }, icon: 'copy' }
             ]
           });
         }
@@ -124,7 +131,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
         rows.push({
           icon: 'camera', name: `${s.client} · Camera`, remote: `video-stream · MPEG-TS`, local: ready.video.url.replace(/^http:\/\//, ''),
           status: streaming ? { text: 'streaming', tone: 'ok' } : { text: v?.error ? `not streaming — ${v.error}` : 'starting…', tone: v?.error ? 'err' : 'idle' },
-          actions: [{ label: 'Open', msg: { type: 'command', command: 'thub.openVideo', client: s.client }, primary: true }, { label: 'Copy', msg: { type: 'copy', text: ready.video.url } }]
+          actions: [{ label: 'Open video', msg: { type: 'command', command: 'thub.openVideo', client: s.client }, icon: 'camera' }, { label: 'Copy', msg: { type: 'copy', text: ready.video.url }, icon: 'copy' }]
         });
       }
       for (const service of ready.forwards || []){
@@ -132,7 +139,7 @@ export class PortsView implements vscode.WebviewViewProvider, vscode.Disposable 
           icon: 'arrow', name: `${s.client} · ${service.name}`, remote: `localhost:${service.clientPort}`, local: `127.0.0.1:${service.port}`,
           status: s.isUp ? { text: 'forwarding', tone: 'ok' } : { text: s.link, tone: 'idle' },
           actions: [
-            { label: 'Open', msg: { type: 'command', command: 'thub.openForward', name: service.name, client: s.client }, primary: true, icon: 'open' },
+            { label: 'Open', msg: { type: 'command', command: 'thub.openForward', name: service.name, client: s.client }, icon: 'open' },
             { label: 'Copy', msg: { type: 'command', command: 'thub.copyForward', name: service.name, client: s.client }, icon: 'copy' },
             { label: 'Update', msg: { type: 'command', command: 'thub.updateForward', name: service.name, client: s.client }, icon: 'edit' },
             { label: 'Remove', msg: { type: 'command', command: 'thub.removeForward', name: service.name, client: s.client }, icon: 'remove' }
@@ -220,9 +227,8 @@ td.remote, td.local { font-family: var(--vscode-editor-font-family); }
 .act.icon { width: 28px; height: 28px; padding: 5px; margin-left: 6px; vertical-align: middle; display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--border); border-radius: 6px; color: var(--vscode-icon-foreground, var(--vscode-foreground)); }
 .act.icon svg.icon { width: 16px; height: 16px; display: block; }
-.act.icon.primary { color: var(--accent); border-color: var(--accent); }
 .act.icon:hover:not(:disabled) { color: var(--vscode-foreground); background: var(--vscode-toolbar-hoverBackground); }
-.act.primary { color: var(--accent); }
+.act.icon:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
 .tone-ok { color: var(--ok); } .tone-err { color: var(--error); }
 .small { font-size: .9em; margin-top: 10px; }
 `,
@@ -245,8 +251,8 @@ window.addEventListener('message', ({ data }) => {
   $('#addRtt').onclick = () => vscode.postMessage({ type: 'command', command: 'thub.addRtt', client: data.rttClient });
   $('#rows').innerHTML = data.rows.map((r, i) => '<tr><td>' + ICON[r.icon] + ' ' + esc(r.name) + '</td><td class="remote">' + esc(r.remote) +
     '</td><td class="local">' + esc(r.local) + '</td><td class="tone-' + r.status.tone + '"><span class="dot ' + (r.status.tone === 'ok' ? 'ok' : r.status.tone === 'err' ? 'err' : 'idle') + '"></span>' +
-    esc(r.status.text) + '</td><td class="right">' + r.actions.map((a, j) => '<button class="act' + (a.icon ? ' icon' : '') + (a.primary ? ' primary' : '') + '" title="' + esc(a.label) +
-    '" aria-label="' + esc(a.label) + '" data-r="' + i + '" data-a="' + j + '">' + (a.icon ? ACTION_ICONS[a.icon] : esc(a.label)) + '</button>').join('') + '</td></tr>').join('');
+    esc(r.status.text) + '</td><td class="right">' + r.actions.map((a, j) => '<button class="act icon" title="' + esc(a.label) +
+    '" aria-label="' + esc(a.label) + '" data-r="' + i + '" data-a="' + j + '">' + ACTION_ICONS[a.icon] + '</button>').join('') + '</td></tr>').join('');
   document.querySelectorAll('#rows .act').forEach((b) => b.onclick = () => vscode.postMessage(data.rows[b.dataset.r].actions[b.dataset.a].msg));
   $('#featureWarning').textContent = data.hasReservation && !data.canForward
     ? 'Forwarded services need a newer thub CLI with connect --forward.'

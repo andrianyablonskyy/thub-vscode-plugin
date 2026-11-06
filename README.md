@@ -4,6 +4,8 @@ Work on the boards in your **TestHub** lab without leaving the editor: reserve a
 
 ![Workbench](docs/design/png/Main.png)
 
+📖 **Full user manual with screenshots:** [docs/user-manual.md](docs/user-manual.md)
+
 ## What you need
 
 - **Node.js 24 or newer** and npm: the extension automatically installs and updates the TestHub Agent CLI in VS Code's extension storage. Install the current Node.js 24+ release for your OS from [nodejs.org/download](https://nodejs.org/en/download), make sure Node.js and npm are on `PATH`, and verify with `node --version` and `npm --version`. On Windows, use the Node.js `.msi` installer with npm and Add to PATH selected, then restart VS Code.
